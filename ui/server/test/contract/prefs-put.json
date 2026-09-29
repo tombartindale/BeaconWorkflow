@@ -1,0 +1,16 @@
+{
+ "body": {
+  "jobs": 16,
+  "module_columns": {
+   "en": true,
+   "zh": true
+  },
+  "operator": "Tester",
+  "parallel_jobs": 1,
+  "poll_seconds": 5,
+  "theme": "",
+  "topic_layout": "side"
+ },
+ "status": 200,
+ "type": "application/json"
+}

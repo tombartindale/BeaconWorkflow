@@ -1,0 +1,7 @@
+{
+ "body": {
+  "error": "Paste some text first."
+ },
+ "status": 400,
+ "type": "application/json"
+}

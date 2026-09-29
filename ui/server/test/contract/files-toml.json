@@ -1,0 +1,5 @@
+{
+ "body": "# Beacon programme configuration. Anything not set here takes the default in\n# tooling/bcn/config.py. Values marked PLACEHOLDER are unconfirmed with the partner.\n\n[programme]\nname = \"Beacon example programme\"\ntheme = \"default\"\n\n[validate]\nforbidden = [\"semester\", \"deadline\", \"next week\", \"Cohort 7\"]\n\n[cues]\nmin_confidence = 0.8     # start strict; loosen only if a real edited topic proves it necessary\nmax_divergence = 0.10\n\n[subtitles]\nformat = \"srt\"           # PLACEHOLDER: \"srt\", \"vtt\" or \"both\"\n\n[delivery]\ntranscode = false        # PLACEHOLDER: partner delivery spec unconfirmed\n\n[compose]\nlayout = \"inset\"         # PLACEHOLDER: \"inset\" or \"side_by_side\"\n\n[bumpers]\nintro = \"\"\noutro = \"\"\n\n[qa]\nunit_minutes_min = 85\nunit_minutes_max = 110\n",
+ "status": 200,
+ "type": "application/octet-stream"
+}

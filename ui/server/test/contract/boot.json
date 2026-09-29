@@ -1,0 +1,763 @@
+{
+ "body": {
+  "codes": [
+   {
+    "area": "BUMPER",
+    "code": "BUMPER_NO_LOGO",
+    "description": "The theme names no logo, so the outro card is blank.",
+    "level": "warn"
+   },
+   {
+    "area": "BUMPER",
+    "code": "BUMPER_NO_TITLE",
+    "description": "The topic's front matter has no title to put on the title card.",
+    "level": "error"
+   },
+   {
+    "area": "BUMPER",
+    "code": "BUMPER_TITLE_FIT",
+    "description": "The title does not fit the title card even at the smallest size.",
+    "level": "warn"
+   },
+   {
+    "area": "CANCELLED",
+    "code": "CANCELLED",
+    "description": "The run was cancelled.",
+    "level": "error"
+   },
+   {
+    "area": "COMPOSE",
+    "code": "COMPOSE_BUMPER",
+    "description": "A bumper is configured but could not be used.",
+    "level": "warn"
+   },
+   {
+    "area": "CONFIG",
+    "code": "CONFIG_INVALID",
+    "description": "programme.toml or module.toml could not be read or has invalid values.",
+    "level": "error"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_CUT",
+    "description": "A span of script is absent from the SRT.",
+    "level": "info"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_CUT_AT_BOUNDARY",
+    "description": "A cut spans a slide boundary; a human must place it.",
+    "level": "error"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_HEAVY_DIVERGENCE",
+    "description": "Too much of the script is absent from or differs from the SRT.",
+    "level": "error"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_INSERTION",
+    "description": "The SRT contains words that are not in the script.",
+    "level": "info"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_LOW_CONFIDENCE",
+    "description": "A slide boundary could not be located with enough confidence.",
+    "level": "error"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_MID_CUE",
+    "description": "A slide boundary falls part way through a subtitle cue.",
+    "level": "warn"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_MISTRANSCRIPTION",
+    "description": "The SRT probably mishears the script here.",
+    "level": "warn"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_PAIR_MISMATCH",
+    "description": "The SRT and the video do not look like a matching pair.",
+    "level": "error"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_PARAPHRASE",
+    "description": "The presenter departed from the approved script.",
+    "level": "warn"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_SHEET_INVALID",
+    "description": "cues.csv is malformed or disagrees with the slide count.",
+    "level": "error"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_SRT_ORDER",
+    "description": "SRT cue timecodes are not strictly ascending.",
+    "level": "error"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_SRT_PAST_END",
+    "description": "The final SRT cue ends after the video does.",
+    "level": "error"
+   },
+   {
+    "area": "CUE",
+    "code": "CUE_SRT_SHORT",
+    "description": "The final SRT cue ends well before the video does.",
+    "level": "warn"
+   },
+   {
+    "area": "DOC",
+    "code": "DOC_DUPLICATE_ID",
+    "description": "An id appears more than once.",
+    "level": "error"
+   },
+   {
+    "area": "DOC",
+    "code": "DOC_HEADING_MISSING",
+    "description": "A required heading is missing from a module document.",
+    "level": "error"
+   },
+   {
+    "area": "DOC",
+    "code": "DOC_ID_FORMAT",
+    "description": "A unit, topic or outcome id is malformed.",
+    "level": "error"
+   },
+   {
+    "area": "DOC",
+    "code": "DOC_MISSING",
+    "description": "A module document is missing.",
+    "level": "error"
+   },
+   {
+    "area": "DOC",
+    "code": "DOC_OUTCOME_UNKNOWN",
+    "description": "A document references a learning outcome not in the course map.",
+    "level": "error"
+   },
+   {
+    "area": "DOC",
+    "code": "DOC_TOPIC_NOT_IN_MAP",
+    "description": "A topic is not listed in the course map.",
+    "level": "error"
+   },
+   {
+    "area": "EDIT",
+    "code": "EDIT_CONFLICT",
+    "description": "The file changed on disk while it was being edited; the edit was not saved.",
+    "level": "error"
+   },
+   {
+    "area": "EDIT",
+    "code": "EDIT_SAVED",
+    "description": "Edited text was saved.",
+    "level": "info"
+   },
+   {
+    "area": "FS",
+    "code": "FS_CHECKSUM_MISMATCH",
+    "description": "A packaged file does not match manifest.json.",
+    "level": "error"
+   },
+   {
+    "area": "FS",
+    "code": "FS_CORRUPT",
+    "description": "A file exists but its contents are not what its name claims.",
+    "level": "error"
+   },
+   {
+    "area": "FS",
+    "code": "FS_EMPTY",
+    "description": "A file exists but is zero length.",
+    "level": "error"
+   },
+   {
+    "area": "FS",
+    "code": "FS_MISSING",
+    "description": "A required input file does not exist.",
+    "level": "error"
+   },
+   {
+    "area": "FS",
+    "code": "FS_NOT_HYDRATED",
+    "description": "A file is a cloud-only placeholder and its contents are not on disk.",
+    "level": "error"
+   },
+   {
+    "area": "FS",
+    "code": "FS_SYNC_CONFLICT",
+    "description": "A sync conflict copy sits beside the real file.",
+    "level": "error"
+   },
+   {
+    "area": "FS",
+    "code": "FS_UNEXPECTED_FILE",
+    "description": "A file the tooling does not expect is present; it is ignored.",
+    "level": "info"
+   },
+   {
+    "area": "FS",
+    "code": "FS_UNSTABLE",
+    "description": "A file was modified in the last few seconds and may still be syncing.",
+    "level": "warn"
+   },
+   {
+    "area": "FS",
+    "code": "FS_WRONG_CASE",
+    "description": "A file or directory name differs from the expected name only by case.",
+    "level": "error"
+   },
+   {
+    "area": "INTAKE",
+    "code": "INTAKE_EXISTS_DIFFERS",
+    "description": "The topic file already exists with different content.",
+    "level": "error"
+   },
+   {
+    "area": "INTAKE",
+    "code": "INTAKE_NOT_IN_MAP",
+    "description": "The pasted topic is not in the course map.",
+    "level": "error"
+   },
+   {
+    "area": "INTAKE",
+    "code": "INTAKE_NO_TOPICS",
+    "description": "No topic front matter was found in the pasted text.",
+    "level": "error"
+   },
+   {
+    "area": "INTAKE",
+    "code": "INTAKE_UNCHANGED",
+    "description": "The topic file already exists with identical content.",
+    "level": "info"
+   },
+   {
+    "area": "INTAKE",
+    "code": "INTAKE_WRITTEN",
+    "description": "The topic file was written.",
+    "level": "info"
+   },
+   {
+    "area": "INTERNAL",
+    "code": "INTERNAL",
+    "description": "An unexpected error inside bcn. This is a bug.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_ASSET_MISSING",
+    "description": "A referenced asset file does not exist.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_DATE",
+    "description": "Narration or slide text contains a date.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_DEICTIC",
+    "description": "Narration refers to something on screen.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_EN_INVALID",
+    "description": "The English source must validate before the Mandarin can be checked against it.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_FORBIDDEN",
+    "description": "Text contains a forbidden string.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_FRONT_MATTER_KEYS",
+    "description": "Front matter keys are not exactly topic_id, title, minutes, lang.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_FRONT_MATTER_MISSING",
+    "description": "topic.md does not begin with a front matter block.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_FRONT_MATTER_VALUE",
+    "description": "A front matter value is malformed.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_IMAGE_ALT",
+    "description": "An image has empty alt text.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_IMAGE_PATH",
+    "description": "An image path is not a relative path into assets/.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_NO_SLIDES",
+    "description": "No slide content found.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_PARITY_BREAK",
+    "description": "A Mandarin slide break sits in a different position from the English.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_PARITY_COUNT",
+    "description": "Mandarin slide count differs from the English.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_SAY_IN_ZH",
+    "description": "A Mandarin source file contains a > **Say:** block.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_SAY_MISSING",
+    "description": "A slide has no > **Say:** narration block.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_SAY_MULTIPLE",
+    "description": "A slide has more than one > **Say:** block.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_SAY_NOT_LAST",
+    "description": "A > **Say:** block is not the last element on its slide.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_SLIDE_COUNT",
+    "description": "Slide count is outside the allowed range.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_SLIDE_TITLE_MISSING",
+    "description": "A slide has no heading.",
+    "level": "warn"
+   },
+   {
+    "area": "MD",
+    "code": "MD_SLIDE_WORDS",
+    "description": "One slide's narration is too short or too long.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_TITLE_LENGTH",
+    "description": "A slide title is too long.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_TOPIC_ID_FORMAT",
+    "description": "topic_id does not match the required pattern.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_TOPIC_ID_PATH",
+    "description": "topic_id does not match the directory the file lives in.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_WORD_COUNT",
+    "description": "Total narration length is outside tolerance for the declared minutes.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_ZH_CHARS",
+    "description": "A Mandarin slide carries more characters than the sanity limit.",
+    "level": "error"
+   },
+   {
+    "area": "MD",
+    "code": "MD_ZH_UNTRANSLATED",
+    "description": "A Mandarin title or slide heading has no Chinese in it; it was probably left in English.",
+    "level": "error"
+   },
+   {
+    "area": "PATH",
+    "code": "PATH_OUTSIDE_ROOT",
+    "description": "A path resolves outside the programme root.",
+    "level": "error"
+   },
+   {
+    "area": "PKG",
+    "code": "PKG_COUNT_MISMATCH",
+    "description": "Slide image count, cue sheet rows and source slide count disagree.",
+    "level": "error"
+   },
+   {
+    "area": "PKG",
+    "code": "PKG_TRANSCODED",
+    "description": "The video was transcoded to the delivery specification.",
+    "level": "info"
+   },
+   {
+    "area": "QA",
+    "code": "QA_ACTIVITY_MISSING",
+    "description": "A unit has no activity.md.",
+    "level": "error"
+   },
+   {
+    "area": "QA",
+    "code": "QA_ARTEFACT_MISSING",
+    "description": "A topic with a video lacks slides, subtitles or a cue sheet.",
+    "level": "error"
+   },
+   {
+    "area": "QA",
+    "code": "QA_ARTEFACT_STALE",
+    "description": "An artefact is older than the source markdown.",
+    "level": "error"
+   },
+   {
+    "area": "QA",
+    "code": "QA_ASSET_OUTSTANDING",
+    "description": "A topic references an outstanding asset request.",
+    "level": "error"
+   },
+   {
+    "area": "QA",
+    "code": "QA_DIR_NOT_IN_MAP",
+    "description": "A topic directory is not in the course map.",
+    "level": "error"
+   },
+   {
+    "area": "QA",
+    "code": "QA_OUTCOME_UNCOVERED",
+    "description": "A learning outcome is not covered by any topic.",
+    "level": "error"
+   },
+   {
+    "area": "QA",
+    "code": "QA_TOPIC_NO_DIR",
+    "description": "A topic in the course map has no directory.",
+    "level": "error"
+   },
+   {
+    "area": "QA",
+    "code": "QA_UNIT_DURATION",
+    "description": "A unit's total video duration is outside the allowed range.",
+    "level": "error"
+   },
+   {
+    "area": "QA",
+    "code": "QA_UNREVIEWED_MISTRANSCRIPTION",
+    "description": "A suspected mis-transcription has not been reviewed.",
+    "level": "error"
+   },
+   {
+    "area": "QA",
+    "code": "QA_VIDEO_DURATION",
+    "description": "Video duration is outside tolerance for the declared minutes.",
+    "level": "error"
+   },
+   {
+    "area": "QA",
+    "code": "QA_ZH_OVERFLOW",
+    "description": "The Mandarin render reports overflow.",
+    "level": "error"
+   },
+   {
+    "area": "RENDER",
+    "code": "RENDER_FAILED",
+    "description": "Marp did not produce the expected output.",
+    "level": "error"
+   },
+   {
+    "area": "RENDER",
+    "code": "RENDER_OVERFLOW",
+    "description": "Content overflows the slide's content box. Blocking for Mandarin.",
+    "level": "warn"
+   },
+   {
+    "area": "RENDER",
+    "code": "RENDER_RESOLUTION",
+    "description": "A rendered PNG is not at the theme's declared resolution.",
+    "level": "error"
+   },
+   {
+    "area": "RENDER",
+    "code": "RENDER_SAFE_AREA",
+    "description": "Content sits inside the subtitle safe area. Blocking for Mandarin.",
+    "level": "warn"
+   },
+   {
+    "area": "RENDER",
+    "code": "RENDER_SLIDE_COUNT",
+    "description": "Rendered slide count differs from the parsed slide count.",
+    "level": "error"
+   },
+   {
+    "area": "RENDER",
+    "code": "RENDER_THEME",
+    "description": "The theme is missing or its theme.toml is invalid.",
+    "level": "error"
+   },
+   {
+    "area": "REVIEW",
+    "code": "REVIEW_UNKNOWN_ITEM",
+    "description": "No suspected mis-transcription with that id.",
+    "level": "error"
+   },
+   {
+    "area": "ROOT",
+    "code": "ROOT_NOT_FOUND",
+    "description": "No programme.toml found at or above the path.",
+    "level": "error"
+   },
+   {
+    "area": "SRT",
+    "code": "SRT_CORRECTION",
+    "description": "A reviewed mis-transcription correction was applied to the subtitle text.",
+    "level": "info"
+   },
+   {
+    "area": "SRT",
+    "code": "SRT_CUE_DURATION",
+    "description": "A subtitle cue is longer than the configured maximum; timings are never changed.",
+    "level": "warn"
+   },
+   {
+    "area": "SRT",
+    "code": "SRT_LINE_LENGTH",
+    "description": "A subtitle line was rewrapped to the configured maximum.",
+    "level": "info"
+   },
+   {
+    "area": "SRT",
+    "code": "SRT_PARSE",
+    "description": "The SRT could not be parsed.",
+    "level": "error"
+   },
+   {
+    "area": "SRT",
+    "code": "SRT_ZH_CUE_COUNT",
+    "description": "The Mandarin SRT has a different number of cues from the English.",
+    "level": "error"
+   },
+   {
+    "area": "SRT",
+    "code": "SRT_ZH_TIMING",
+    "description": "A Mandarin SRT cue has different timings from the English.",
+    "level": "error"
+   },
+   {
+    "area": "SRT",
+    "code": "SRT_ZH_UNTRANSLATED",
+    "description": "A Mandarin SRT cue has the same text as the English.",
+    "level": "warn"
+   },
+   {
+    "area": "STEP",
+    "code": "STEP_PREREQUISITE",
+    "description": "A previous step has not been run, or its output is stale.",
+    "level": "error"
+   },
+   {
+    "area": "SYNC",
+    "code": "SYNC_CONFLICT",
+    "description": "A file changed on both sides since the last sync; neither was overwritten.",
+    "level": "error"
+   },
+   {
+    "area": "SYNC",
+    "code": "SYNC_COPIED",
+    "description": "A file was copied.",
+    "level": "info"
+   },
+   {
+    "area": "SYNC",
+    "code": "SYNC_DOWNLOAD_FAILED",
+    "description": "A cloud-only file could not be downloaded.",
+    "level": "error"
+   },
+   {
+    "area": "SYNC",
+    "code": "SYNC_NOT_CONFIGURED",
+    "description": "No [sync] remote is set in programme.toml.",
+    "level": "error"
+   },
+   {
+    "area": "SYNC",
+    "code": "SYNC_ONE_SIDE",
+    "description": "A file exists on one side only and was left alone; deletions never sync.",
+    "level": "info"
+   },
+   {
+    "area": "SYNC",
+    "code": "SYNC_REMOTE_CONFLICT_COPY",
+    "description": "The shared folder holds a sync conflict copy of a file.",
+    "level": "error"
+   },
+   {
+    "area": "SYNC",
+    "code": "SYNC_REMOTE_MISSING",
+    "description": "The shared folder is not where programme.toml says it is.",
+    "level": "error"
+   },
+   {
+    "area": "SYNC",
+    "code": "SYNC_UNSTABLE",
+    "description": "A file changed in the last few seconds and was skipped this time.",
+    "level": "warn"
+   },
+   {
+    "area": "TOOL",
+    "code": "TOOL_FAILED",
+    "description": "An external binary exited with an error.",
+    "level": "error"
+   },
+   {
+    "area": "TOOL",
+    "code": "TOOL_MISSING",
+    "description": "An external binary is not installed where expected.",
+    "level": "error"
+   },
+   {
+    "area": "TOOL",
+    "code": "TOOL_VERSION",
+    "description": "An external binary is not at the pinned version.",
+    "level": "error"
+   },
+   {
+    "area": "USAGE",
+    "code": "USAGE",
+    "description": "The command was invoked incorrectly.",
+    "level": "error"
+   },
+   {
+    "area": "XL",
+    "code": "XL_EXPORTED",
+    "description": "A topic was exported for translation.",
+    "level": "info"
+   },
+   {
+    "area": "XL",
+    "code": "XL_IMPORTED",
+    "description": "A translated file was placed.",
+    "level": "info"
+   },
+   {
+    "area": "XL",
+    "code": "XL_NOT_READY",
+    "description": "A topic is not ready to export for translation.",
+    "level": "error"
+   },
+   {
+    "area": "XL",
+    "code": "XL_UNKNOWN_FILE",
+    "description": "A returned file does not name a known topic.",
+    "level": "warn"
+   }
+  ],
+  "doctor": {
+   "artifacts": [],
+   "diagnostics": [
+    {
+     "code": "TOOL_VERSION",
+     "file": null,
+     "hint": null,
+     "lang": null,
+     "level": "error",
+     "line": null,
+     "message": "node is 24.21.0; the pipeline is pinned to Node 22.",
+     "slide": null,
+     "topic": null
+    }
+   ],
+   "duration_ms": "<N>",
+   "exit_code": 4,
+   "ok": false,
+   "results": [
+    {
+     "found": "ffmpeg 7.1.1",
+     "ok": true,
+     "path": "/opt/homebrew/bin/ffmpeg",
+     "pinned": "7.1",
+     "skipped": false,
+     "topic": "ffmpeg"
+    },
+    {
+     "found": "ffprobe 7.1.1",
+     "ok": true,
+     "path": "/opt/homebrew/bin/ffprobe",
+     "pinned": "7.1",
+     "skipped": false,
+     "topic": "ffprobe"
+    },
+    {
+     "ok": false,
+     "pinned": "4.5.1",
+     "skipped": false,
+     "topic": "marp"
+    },
+    {
+     "found": "chrome 154.0.8037.57",
+     "ok": true,
+     "path": "/Users/nhqr5/Documents/Teaching/BeaconWorkflow/tooling/vendor/chrome/chrome/mac_arm-154.0.8037.57/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+     "pinned": "154.0.8037.57",
+     "skipped": false,
+     "topic": "chrome"
+    }
+   ],
+   "schema": 1,
+   "started": "<TIME>",
+   "target": "tools",
+   "tool": "doctor"
+  },
+  "operator": "nhqr5",
+  "prefs": {
+   "jobs": 1,
+   "module_columns": {
+    "en": true,
+    "zh": true
+   },
+   "operator": "",
+   "parallel_jobs": 2,
+   "poll_seconds": 15,
+   "theme": "",
+   "topic_layout": "side"
+  },
+  "root": "<ROOT>",
+  "status_version": "<N>",
+  "warnings": []
+ },
+ "status": 200,
+ "type": "application/json"
+}

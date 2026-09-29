@@ -1,0 +1,28 @@
+{
+ "body": {
+  "args": {
+   "force": true,
+   "lang": "en"
+  },
+  "by": "Tester",
+  "command": "validate",
+  "created": "<TIME>",
+  "duration_ms": null,
+  "exit_code": null,
+  "finished": null,
+  "id": 1,
+  "label": "validate --force · KV7015/U01/T01",
+  "last_event_age_ms": null,
+  "ok": null,
+  "progress": null,
+  "started": null,
+  "state": "queued-or-running",
+  "target_count": 1,
+  "target_index": 0,
+  "targets": [
+   "KV7015/U01/T01"
+  ]
+ },
+ "status": 202,
+ "type": "application/json"
+}

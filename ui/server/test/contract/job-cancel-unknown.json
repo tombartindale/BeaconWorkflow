@@ -1,0 +1,7 @@
+{
+ "body": {
+  "error": "No such job, or it has already finished."
+ },
+ "status": 404,
+ "type": "application/json"
+}

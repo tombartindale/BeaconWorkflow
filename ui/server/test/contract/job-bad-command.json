@@ -1,0 +1,7 @@
+{
+ "body": {
+  "error": "'rm' is not a job the UI can run."
+ },
+ "status": 400,
+ "type": "application/json"
+}

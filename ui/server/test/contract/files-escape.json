@@ -1,0 +1,7 @@
+{
+ "body": {
+  "error": "That path is outside the programme root."
+ },
+ "status": 403,
+ "type": "application/json"
+}

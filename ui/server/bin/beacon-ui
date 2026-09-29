@@ -1,0 +1,3 @@
+#!/usr/bin/env node
+// Runs the built server (npm run build -w server). For development: npm run dev:server.
+import('../dist/cli.js').then(m => m.main(process.argv.slice(2))).then(code => { if (typeof code === 'number' && code) process.exit(code); });

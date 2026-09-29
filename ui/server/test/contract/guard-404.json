@@ -1,0 +1,7 @@
+{
+ "body": {
+  "error": "Not found."
+ },
+ "status": 404,
+ "type": "application/json"
+}

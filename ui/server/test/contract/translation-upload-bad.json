@@ -1,0 +1,7 @@
+{
+ "body": {
+  "error": "Upload a .zip file."
+ },
+ "status": 400,
+ "type": "application/json"
+}

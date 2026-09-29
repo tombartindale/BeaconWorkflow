@@ -12,3 +12,9 @@ out/
 example/translation/exports/
 # The local working copy of the live content: synced with OneDrive, never committed
 working_area/
+# UI (Node workspace): dependencies and build output
+ui/node_modules/
+ui/*/node_modules/
+ui/server/dist/
+ui/app/dist/
+ui/app/.quasar/

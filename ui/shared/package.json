@@ -1,0 +1,11 @@
+{
+  "name": "@beacon/shared",
+  "private": true,
+  "description": "Types shared by the server and the app: bcn envelopes (generated from bcn schema) and the UI's HTTP API. Types only; nothing to build.",
+  "type": "module",
+  "types": "./index.d.ts",
+  "exports": { ".": { "types": "./index.d.ts" } },
+  "devDependencies": {
+    "json-schema-to-typescript": "16.0.0"
+  }
+}

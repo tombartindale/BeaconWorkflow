@@ -1,0 +1,66 @@
+{
+ "body": {
+  "args": {
+   "dry_run": true,
+   "from": "<DATA>/intake/<STAMP>.md"
+  },
+  "by": "Tester",
+  "command": "intake",
+  "created": "<TIME>",
+  "duration_ms": "<N>",
+  "envelopes": [
+   {
+    "artifacts": [],
+    "diagnostics": [
+     {
+      "code": "INTAKE_UNCHANGED",
+      "file": null,
+      "hint": null,
+      "lang": null,
+      "level": "info",
+      "line": null,
+      "message": "KV7015/U01/T01/topic.md already holds this text.",
+      "slide": null,
+      "topic": "KV7015-U01-T01"
+     }
+    ],
+    "duration_ms": "<N>",
+    "ok": true,
+    "results": [
+     {
+      "action": "unchanged",
+      "ok": true,
+      "path": "KV7015/U01/T01/topic.md",
+      "skipped": false,
+      "topic": "KV7015-U01-T01",
+      "validate_ok": true
+     }
+    ],
+    "schema": 1,
+    "started": "<TIME>",
+    "target": ".",
+    "tool": "intake",
+    "topics_found": 1
+   }
+  ],
+  "exit_code": 0,
+  "finished": "<TIME>",
+  "id": 3,
+  "label": "intake (check only) · paste",
+  "last_event_age_ms": null,
+  "log": [
+   "{\"event\": \"log\", \"level\": \"info\", \"message\": \"$ bcn intake <ROOT> --from <DATA>/intake/<STAMP>.md --dry-run\"}"
+  ],
+  "ok": true,
+  "progress": null,
+  "started": "<TIME>",
+  "state": "done",
+  "target_count": 1,
+  "target_index": 0,
+  "targets": [
+   "."
+  ]
+ },
+ "status": 200,
+ "type": "application/json"
+}

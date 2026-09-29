@@ -1,0 +1,7 @@
+{
+ "body": {
+  "error": "Requests are accepted from localhost only."
+ },
+ "status": 403,
+ "type": "application/json"
+}

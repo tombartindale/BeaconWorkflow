@@ -1,0 +1,5 @@
+{
+ "body": "event: hello\ndata: {\"status_version\": N}",
+ "status": 200,
+ "type": "text/event-stream"
+}

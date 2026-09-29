@@ -1,0 +1,7 @@
+{
+ "body": {
+  "error": "'shell' is not an allowed argument."
+ },
+ "status": 400,
+ "type": "application/json"
+}

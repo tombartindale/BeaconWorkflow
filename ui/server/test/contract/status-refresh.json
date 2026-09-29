@@ -1,0 +1,7 @@
+{
+ "body": {
+  "version": "<N>"
+ },
+ "status": 200,
+ "type": "application/json"
+}

@@ -1,0 +1,28 @@
+{
+  "name": "beacon-ui-workspace",
+  "private": true,
+  "description": "Beacon UI: a Node backend over the bcn CLI and a Quasar front end. Versions are exact on purpose.",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "shared",
+    "server",
+    "app"
+  ],
+  "scripts": {
+    "build": "npm run build -w server && npm run build -w app",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w app",
+    "test": "npm test -w server",
+    "gen:envelopes": "node shared/scripts/gen-envelopes.mjs",
+    "dev:server": "npm run dev -w server --",
+    "dev:app": "npm run dev -w app"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  },
+  "allowScripts": {
+    "better-sqlite3@13.0.3": true,
+    "esbuild@0.28.2": true
+  }
+}

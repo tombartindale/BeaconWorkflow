@@ -1,0 +1,755 @@
+{
+ "body": {
+  "show": {
+   "_status_version": "<N>",
+   "artifacts": [],
+   "diagnostics": [],
+   "duration_ms": "<N>",
+   "exit_code": 0,
+   "ok": true,
+   "results": [
+    {
+     "cue_threshold": 0.8,
+     "cues": [],
+     "en": {
+      "front": {
+       "lang": "en",
+       "minutes": "3",
+       "title": "Turning a topic into a question",
+       "topic_id": "KV7015-U01-T01"
+      },
+      "narration_limits": [
+       30,
+       200
+      ],
+      "range": [
+       369,
+       500
+      ],
+      "slides": [
+       {
+        "content_html": "<h1>Turning a topic into a question</h1>\n<ul>\n<li>Topics are broad</li>\n<li>Questions are answerable</li>\n<li>Research starts with the question</li>\n</ul>",
+        "images": [],
+        "index": 1,
+        "line": 7,
+        "narration": "Every research project begins with a topic, but a topic is not something you can research. A topic is an area of interest, like social media or climate policy. A question is something you can actually answer with evidence. In this topic we will look at how to move from one to the other, and why that move matters so much for everything that follows.",
+        "paragraphs": [
+         "Every research project begins with a topic, but a topic is not something you can research. A topic is an area of interest, like social media or climate policy. A question is something you can actually answer with evidence. In this topic we will look at how to move from one to the other, and why that move matters so much for everything that follows."
+        ],
+        "running_words": 65,
+        "title": "Turning a topic into a question",
+        "words": 65,
+        "words_ok": true
+       },
+       {
+        "content_html": "<h2>From broad to narrow</h2>\n<p><img src=\"/files/KV7015/U01/T01/assets/funnel.png\" alt=\"A funnel narrowing from topic to question\"></p>",
+        "images": [
+         {
+          "alt": "A funnel narrowing from topic to question",
+          "path": "KV7015/U01/T01/assets/funnel.png"
+         }
+        ],
+        "index": 2,
+        "line": 17,
+        "narration": "Think of the process as a funnel. At the top sits your broad topic. Each step down the funnel adds a constraint. You might narrow by population, by place, by time period or by outcome. By the bottom of the funnel you have something small enough to study properly, but still connected to the area that interested you in the first place.",
+        "paragraphs": [
+         "Think of the process as a funnel. At the top sits your broad topic. Each step down the funnel adds a constraint. You might narrow by population, by place, by time period or by outcome. By the bottom of the funnel you have something small enough to study properly, but still connected to the area that interested you in the first place."
+        ],
+        "running_words": 127,
+        "title": "From broad to narrow",
+        "words": 62,
+        "words_ok": true
+       },
+       {
+        "content_html": "<h2>Adding a population</h2>\n<ul>\n<li>Who exactly?</li>\n<li>Students, nurses, small firms</li>\n<li>Be specific enough to sample</li>\n</ul>",
+        "images": [],
+        "index": 3,
+        "line": 25,
+        "narration": "The first constraint is usually the population. Social media is too broad, but social media use among first year nursing students is much narrower. Being specific about who you are studying tells you who to recruit, and it tells your reader who your findings apply to. If you cannot describe your population in a sentence, the question is not ready yet.",
+        "paragraphs": [
+         "The first constraint is usually the population. Social media is too broad, but social media use among first year nursing students is much narrower. Being specific about who you are studying tells you who to recruit, and it tells your reader who your findings apply to. If you cannot describe your population in a sentence, the question is not ready yet."
+        ],
+        "running_words": 188,
+        "title": "Adding a population",
+        "words": 61,
+        "words_ok": true
+       },
+       {
+        "content_html": "<h2>The PICO framework</h2>\n<ul>\n<li>Population</li>\n<li>Intervention</li>\n<li>Comparison</li>\n<li>Outcome</li>\n</ul>",
+        "images": [],
+        "index": 4,
+        "line": 35,
+        "narration": "A useful tool for health and social care questions is the PICO framework. PICO stands for population, intervention, comparison and outcome. Filling in each part forces you to be explicit about what you are measuring and against what. Not every question needs all four parts, but working through them quickly shows which parts of your question are still vague.",
+        "paragraphs": [
+         "A useful tool for health and social care questions is the PICO framework. PICO stands for population, intervention, comparison and outcome. Filling in each part forces you to be explicit about what you are measuring and against what. Not every question needs all four parts, but working through them quickly shows which parts of your question are still vague."
+        ],
+        "running_words": 247,
+        "title": "The PICO framework",
+        "words": 59,
+        "words_ok": true
+       },
+       {
+        "content_html": "<h2>Measuring the outcome</h2>\n<ul>\n<li>Decide what counts as evidence</li>\n<li>Choose an instrument</li>\n<li>Likert scales, interviews, records</li>\n</ul>",
+        "images": [],
+        "index": 5,
+        "line": 46,
+        "narration": "Once you know your outcome, decide how you would measure it. You might use a Likert scale in a questionnaire, a set of interviews, or existing records. If you cannot imagine any way to measure the outcome, that is a sign the question needs more work. The measurement you choose will also shape the design of the whole study.",
+        "paragraphs": [
+         "Once you know your outcome, decide how you would measure it. You might use a Likert scale in a questionnaire, a set of interviews, or existing records. If you cannot imagine any way to measure the outcome, that is a sign the question needs more work. The measurement you choose will also shape the design of the whole study."
+        ],
+        "running_words": 306,
+        "title": "Measuring the outcome",
+        "words": 59,
+        "words_ok": true
+       },
+       {
+        "content_html": "<h2>Checking your question</h2>\n<ul>\n<li>Is it answerable?</li>\n<li>Is it focused?</li>\n<li>Does it still interest you?</li>\n</ul>",
+        "images": [],
+        "index": 6,
+        "line": 56,
+        "narration": "Before you commit, check your question against three tests. Is it answerable with evidence you could realistically collect? Is it focused enough to finish in the time you have? And does it still interest you? A good research question passes all three, and it will guide every decision you make from here on. Write it down, share it with a colleague, and ask them to explain it back to you in their own words.",
+        "paragraphs": [
+         "Before you commit, check your question against three tests. Is it answerable with evidence you could realistically collect? Is it focused enough to finish in the time you have? And does it still interest you? A good research question passes all three, and it will guide every decision you make from here on. Write it down, share it with a colleague, and ask them to explain it back to you in their own words."
+        ],
+        "running_words": 380,
+        "title": "Checking your question",
+        "words": 74,
+        "words_ok": true
+       }
+      ],
+      "target_words": 435,
+      "words": 380,
+      "words_ok": true,
+      "words_per_minute": 145
+     },
+     "media": {
+      "draft": {
+       "en": null,
+       "zh": null
+      },
+      "draft_offset": {
+       "en": 0,
+       "zh": 0
+      },
+      "master": "KV7015/U01/T01/edit/master.mp4",
+      "subtitles": {
+       "en": "KV7015/U01/T01/edit/master.srt",
+       "zh": null
+      }
+     },
+     "ok": true,
+     "render": {
+      "en": {
+       "flagged": {},
+       "pdf": null,
+       "slides": []
+      },
+      "theme": {
+       "height": 1080,
+       "name": "default",
+       "safe_bottom": 216,
+       "width": 1920
+      },
+      "zh": {
+       "flagged": {},
+       "pdf": null,
+       "slides": []
+      }
+     },
+     "review": {
+      "cue_overrides": {},
+      "transcripts": {}
+     },
+     "skipped": false,
+     "topic": "KV7015-U01-T01",
+     "zh": null
+    }
+   ],
+   "schema": 1,
+   "started": "<TIME>",
+   "target": "KV7015/U01/T01",
+   "tool": "show"
+  },
+  "status": {
+   "artifacts": [
+    {
+     "bytes": 2925,
+     "exists": true,
+     "hydration": "local",
+     "key": "topic.md",
+     "kind": "source",
+     "lang": "en",
+     "mtime": "<TIME>",
+     "path": "KV7015/U01/T01/topic.md",
+     "stale": null
+    },
+    {
+     "bytes": 2322814,
+     "exists": true,
+     "hydration": "local",
+     "key": "edit/master.mp4",
+     "kind": "source",
+     "lang": "en",
+     "mtime": "<TIME>",
+     "path": "KV7015/U01/T01/edit/master.mp4",
+     "stale": null
+    },
+    {
+     "bytes": 3242,
+     "exists": true,
+     "hydration": "local",
+     "key": "edit/master.srt",
+     "kind": "source",
+     "lang": "en",
+     "mtime": "<TIME>",
+     "path": "KV7015/U01/T01/edit/master.srt",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "review.json",
+     "kind": "source",
+     "lang": null,
+     "mtime": null,
+     "path": "KV7015/U01/T01/review.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/validate.json",
+     "kind": "result",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/validate.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/render.json",
+     "kind": "result",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/render.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/cues.json",
+     "kind": "result",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/cues.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/subtitles.json",
+     "kind": "result",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/subtitles.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/compose.json",
+     "kind": "result",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/compose.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/package.json",
+     "kind": "result",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/package.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/deck.en.pdf",
+     "kind": "deck",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/deck.en.pdf",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/script.en.pdf",
+     "kind": "script",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/script.en.pdf",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/script.en.html",
+     "kind": "script",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/script.en.html",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/script.en.txt",
+     "kind": "script",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/script.en.txt",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/bumpers/KV7015-U01-T01.intro-card.en.png",
+     "kind": "bumper_card",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/bumpers/KV7015-U01-T01.intro-card.en.png",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/bumpers/KV7015-U01-T01.outro-card.en.png",
+     "kind": "bumper_card",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/bumpers/KV7015-U01-T01.outro-card.en.png",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/bumpers/KV7015-U01-T01.intro.en.mp4",
+     "kind": "bumper",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/bumpers/KV7015-U01-T01.intro.en.mp4",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/bumpers/KV7015-U01-T01.outro.en.mp4",
+     "kind": "bumper",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/bumpers/KV7015-U01-T01.outro.en.mp4",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "count": 0,
+     "exists": false,
+     "hydration": null,
+     "key": "build/slides/en",
+     "kind": "slides",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/slides/en",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/KV7015-U01-T01.cues.csv",
+     "kind": "cues",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/KV7015-U01-T01.cues.csv",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/cues-report.json",
+     "kind": "report",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/cues-report.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/subtitles/KV7015-U01-T01.en.srt",
+     "kind": "subtitles",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/subtitles/KV7015-U01-T01.en.srt",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/draft.mp4",
+     "kind": "draft",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/draft.mp4",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "out/manifest.json",
+     "kind": "package",
+     "lang": "en",
+     "mtime": null,
+     "path": "KV7015/U01/T01/out/manifest.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "translation.json",
+     "kind": "source",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/translation.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "topic.zh.md",
+     "kind": "source",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/topic.zh.md",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "edit/master.zh.srt",
+     "kind": "source",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/edit/master.zh.srt",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/validate.zh.json",
+     "kind": "result",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/validate.zh.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/subtitles.zh.json",
+     "kind": "result",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/subtitles.zh.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/render.zh.json",
+     "kind": "result",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/render.zh.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/compose.zh.json",
+     "kind": "result",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/compose.zh.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/package.zh.json",
+     "kind": "result",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/package.zh.json",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "count": 0,
+     "exists": false,
+     "hydration": null,
+     "key": "build/slides/zh",
+     "kind": "slides",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/slides/zh",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/draft.zh.mp4",
+     "kind": "draft",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/draft.zh.mp4",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/bumpers/KV7015-U01-T01.intro-card.zh.png",
+     "kind": "bumper_card",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/bumpers/KV7015-U01-T01.intro-card.zh.png",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/bumpers/KV7015-U01-T01.outro-card.zh.png",
+     "kind": "bumper_card",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/bumpers/KV7015-U01-T01.outro-card.zh.png",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/bumpers/KV7015-U01-T01.intro.zh.mp4",
+     "kind": "bumper",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/bumpers/KV7015-U01-T01.intro.zh.mp4",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "build/bumpers/KV7015-U01-T01.outro.zh.mp4",
+     "kind": "bumper",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/build/bumpers/KV7015-U01-T01.outro.zh.mp4",
+     "stale": null
+    },
+    {
+     "bytes": null,
+     "exists": false,
+     "hydration": null,
+     "key": "out/manifest.zh.json",
+     "kind": "package",
+     "lang": "zh",
+     "mtime": null,
+     "path": "KV7015/U01/T01/out/manifest.zh.json",
+     "stale": null
+    }
+   ],
+   "code": "T01",
+   "en": {
+    "blocked": false,
+    "blockers": [],
+    "complete": false,
+    "diagnostics": {
+     "error": 0,
+     "info": 0,
+     "warn": 0
+    },
+    "next": "validate",
+    "stage": "drafted",
+    "stage_index": 1,
+    "stages": [
+     "planned",
+     "drafted",
+     "validated",
+     "rendered",
+     "recorded",
+     "cued",
+     "packaged"
+    ],
+    "stale": false,
+    "stale_steps": [],
+    "steps": {
+     "compose": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     },
+     "cues": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     },
+     "package": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     },
+     "render": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     },
+     "subtitles": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     },
+     "validate": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     }
+    }
+   },
+   "has_dir": true,
+   "hydration": "local",
+   "in_course_map": true,
+   "minutes": 3,
+   "module": "KV7015",
+   "ok": true,
+   "outcomes": [
+    "LO1"
+   ],
+   "path": "KV7015/U01/T01",
+   "skipped": false,
+   "title": "Turning a topic into a question",
+   "topic": "KV7015-U01-T01",
+   "unit": "U01",
+   "unreviewed_mistranscriptions": 0,
+   "zh": {
+    "blocked": false,
+    "blockers": [],
+    "complete": false,
+    "diagnostics": {
+     "error": 0,
+     "info": 0,
+     "warn": 0
+    },
+    "next": null,
+    "stage": "not_sent",
+    "stage_index": 0,
+    "stages": [
+     "not_sent",
+     "out_for_translation",
+     "returned",
+     "parity_checked",
+     "rendered",
+     "packaged"
+    ],
+    "stale": false,
+    "stale_steps": [],
+    "steps": {
+     "compose": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     },
+     "package": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     },
+     "render": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     },
+     "subtitles": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     },
+     "validate": {
+      "exists": false,
+      "fresh": null,
+      "ok": null,
+      "skipped": null,
+      "time": null
+     }
+    }
+   }
+  }
+ },
+ "status": 200,
+ "type": "application/json"
+}

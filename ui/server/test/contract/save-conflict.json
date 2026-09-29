@@ -1,0 +1,64 @@
+{
+ "body": {
+  "args": {
+   "expect_sha": "0000000000000000000000000000000000000000000000000000000000000000",
+   "from": "<DATA>/edits/<STAMP>.md",
+   "lang": "en"
+  },
+  "by": "Tester",
+  "command": "edit",
+  "created": "<TIME>",
+  "duration_ms": "<N>",
+  "envelopes": [
+   {
+    "artifacts": [],
+    "diagnostics": [
+     {
+      "code": "EDIT_CONFLICT",
+      "file": "topic.md",
+      "hint": "Reload to see the new version (your text is kept to copy from), or save again to overwrite it.",
+      "lang": "en",
+      "level": "error",
+      "line": null,
+      "message": "topic.md has changed on disk since you started editing; nothing was written.",
+      "slide": null,
+      "topic": "KV7015-U01-T01"
+     }
+    ],
+    "duration_ms": "<N>",
+    "ok": false,
+    "results": [
+     {
+      "current_sha256": "8899815550981de4f68fabeb4dd0f35864073f9fdd6ffd589a4d32c630896835",
+      "ok": false,
+      "skipped": false,
+      "topic": "KV7015-U01-T01"
+     }
+    ],
+    "schema": 1,
+    "started": "<TIME>",
+    "target": "KV7015/U01/T01",
+    "tool": "edit"
+   }
+  ],
+  "exit_code": 1,
+  "finished": "<TIME>",
+  "id": 4,
+  "label": "edit topic.md · KV7015/U01/T01",
+  "last_event_age_ms": null,
+  "log": [
+   "{\"event\": \"log\", \"level\": \"info\", \"message\": \"$ bcn edit <ROOT>/KV7015/U01/T01 --lang en --from <DATA>/edits/<STAMP>.md --expect-sha 0000000000000000000000000000000000000000000000000000000000000000\"}"
+  ],
+  "ok": false,
+  "progress": null,
+  "started": "<TIME>",
+  "state": "failed",
+  "target_count": 1,
+  "target_index": 0,
+  "targets": [
+   "KV7015/U01/T01"
+  ]
+ },
+ "status": 200,
+ "type": "application/json"
+}

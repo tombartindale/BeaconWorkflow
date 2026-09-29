@@ -1,0 +1,7 @@
+{
+ "body": {
+  "error": "lang must be en or zh"
+ },
+ "status": 400,
+ "type": "application/json"
+}

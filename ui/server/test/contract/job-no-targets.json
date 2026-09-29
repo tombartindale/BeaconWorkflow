@@ -1,0 +1,7 @@
+{
+ "body": {
+  "error": "A job needs at least one target."
+ },
+ "status": 400,
+ "type": "application/json"
+}

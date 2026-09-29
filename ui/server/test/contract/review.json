@@ -1,0 +1,32 @@
+{
+ "body": {
+  "_status_version": "<N>",
+  "artifacts": [],
+  "diagnostics": [],
+  "duration_ms": "<N>",
+  "exit_code": 0,
+  "ok": true,
+  "results": [
+   {
+    "items": [],
+    "ok": true,
+    "skipped": false,
+    "topic": "KV7015-U01-T01",
+    "unreviewed": 0
+   },
+   {
+    "items": [],
+    "ok": true,
+    "skipped": false,
+    "topic": "KV7015-U01-T02",
+    "unreviewed": 0
+   }
+  ],
+  "schema": 1,
+  "started": "<TIME>",
+  "target": "KV7015",
+  "tool": "review"
+ },
+ "status": 200,
+ "type": "application/json"
+}

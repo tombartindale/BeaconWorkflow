@@ -1,0 +1,53 @@
+{
+ "body": {
+  "args": {
+   "force": true,
+   "lang": "en"
+  },
+  "by": "Tester",
+  "command": "validate",
+  "created": "<TIME>",
+  "duration_ms": "<N>",
+  "envelopes": [
+   {
+    "artifacts": [],
+    "diagnostics": [],
+    "duration_ms": "<N>",
+    "ok": true,
+    "results": [
+     {
+      "ok": true,
+      "skipped": false,
+      "slides": 6,
+      "target_words": 435,
+      "topic": "KV7015-U01-T01",
+      "words": 380
+     }
+    ],
+    "schema": 1,
+    "started": "<TIME>",
+    "target": "KV7015/U01/T01",
+    "tool": "validate"
+   }
+  ],
+  "exit_code": 0,
+  "finished": "<TIME>",
+  "id": 1,
+  "label": "validate --force · KV7015/U01/T01",
+  "last_event_age_ms": null,
+  "log": [
+   "{\"event\": \"log\", \"level\": \"info\", \"message\": \"$ bcn validate <ROOT>/KV7015/U01/T01 --lang en --force --jobs 16\"}"
+  ],
+  "ok": true,
+  "progress": null,
+  "started": "<TIME>",
+  "state": "done",
+  "target_count": 1,
+  "target_index": 0,
+  "targets": [
+   "KV7015/U01/T01"
+  ]
+ },
+ "status": 200,
+ "type": "application/json"
+}

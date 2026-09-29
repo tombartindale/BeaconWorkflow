@@ -1,0 +1,16 @@
+{
+ "body": {
+  "exports": [],
+  "returned": [
+   {
+    "bytes": null,
+    "kind": "folder",
+    "mtime": "<TIME>",
+    "name": "sample",
+    "path": "translation/returned/sample"
+   }
+  ]
+ },
+ "status": 200,
+ "type": "application/json"
+}

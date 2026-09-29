@@ -1,0 +1,81 @@
+{
+ "body": {
+  "jobs": [
+   {
+    "args": {
+     "expect_sha": "0000000000000000000000000000000000000000000000000000000000000000",
+     "from": "<DATA>/edits/<STAMP>.md",
+     "lang": "en"
+    },
+    "by": "Tester",
+    "command": "edit",
+    "created": "<TIME>",
+    "duration_ms": "<N>",
+    "exit_code": 1,
+    "finished": "<TIME>",
+    "id": 4,
+    "label": "edit topic.md · KV7015/U01/T01",
+    "last_event_age_ms": null,
+    "ok": false,
+    "progress": null,
+    "started": "<TIME>",
+    "state": "failed",
+    "target_count": 1,
+    "target_index": 0,
+    "targets": [
+     "KV7015/U01/T01"
+    ]
+   },
+   {
+    "args": {
+     "dry_run": true,
+     "from": "<DATA>/intake/<STAMP>.md"
+    },
+    "by": "Tester",
+    "command": "intake",
+    "created": "<TIME>",
+    "duration_ms": "<N>",
+    "exit_code": 0,
+    "finished": "<TIME>",
+    "id": 3,
+    "label": "intake (check only) · paste",
+    "last_event_age_ms": null,
+    "ok": true,
+    "progress": null,
+    "started": "<TIME>",
+    "state": "done",
+    "target_count": 1,
+    "target_index": 0,
+    "targets": [
+     "."
+    ]
+   },
+   {
+    "args": {
+     "by": "Tester",
+     "fingerprint": "MD_DATE|en|s1|x"
+    },
+    "by": "Tester",
+    "command": "ack",
+    "created": "<TIME>",
+    "duration_ms": "<N>",
+    "exit_code": 2,
+    "finished": "<TIME>",
+    "id": 2,
+    "label": "acknowledge MD_DATE · KV7015/U01/T01",
+    "last_event_age_ms": null,
+    "ok": false,
+    "progress": null,
+    "started": "<TIME>",
+    "state": "failed",
+    "target_count": 1,
+    "target_index": 0,
+    "targets": [
+     "KV7015/U01/T01"
+    ]
+   }
+  ]
+ },
+ "status": 200,
+ "type": "application/json"
+}

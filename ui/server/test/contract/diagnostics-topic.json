@@ -1,0 +1,23 @@
+{
+ "body": {
+  "_status_version": "<N>",
+  "artifacts": [],
+  "counts": {
+   "error": 0,
+   "info": 0,
+   "warn": 0
+  },
+  "diagnostics": [],
+  "duration_ms": "<N>",
+  "exit_code": 0,
+  "ok": true,
+  "outstanding": [],
+  "results": [],
+  "schema": 1,
+  "started": "<TIME>",
+  "target": "KV7015/U01/T01",
+  "tool": "diagnostics"
+ },
+ "status": 200,
+ "type": "application/json"
+}

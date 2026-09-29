@@ -1,0 +1,46 @@
+{
+ "body": {
+  "artifacts": [],
+  "counts": {
+   "error": 1,
+   "info": 0,
+   "warn": 0
+  },
+  "diagnostics": [
+   {
+    "code": "MD_SAY_MISSING",
+    "file": "topic.md",
+    "hint": "End every slide with a > **Say:** block holding its narration.",
+    "lang": "en",
+    "level": "error",
+    "line": 66,
+    "message": "Slide 7 has no > **Say:** block.",
+    "slide": 7,
+    "topic": "KV7015-U01-T01"
+   }
+  ],
+  "diagnostics_are_validation": true,
+  "duration_ms": "<N>",
+  "exit_code": 0,
+  "ok": true,
+  "results": [
+   {
+    "ok": true,
+    "sha256": "8899815550981de4f68fabeb4dd0f35864073f9fdd6ffd589a4d32c630896835",
+    "skipped": false,
+    "slides": 7,
+    "target_words": 435,
+    "topic": "KV7015-U01-T01",
+    "words": 380,
+    "written": false
+   }
+  ],
+  "schema": 1,
+  "started": "<TIME>",
+  "target": "KV7015/U01/T01",
+  "tool": "edit",
+  "validation_ok": false
+ },
+ "status": 200,
+ "type": "application/json"
+}

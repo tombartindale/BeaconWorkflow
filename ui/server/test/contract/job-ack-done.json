@@ -1,0 +1,56 @@
+{
+ "body": {
+  "args": {
+   "by": "Tester",
+   "fingerprint": "MD_DATE|en|s1|x"
+  },
+  "by": "Tester",
+  "command": "ack",
+  "created": "<TIME>",
+  "duration_ms": "<N>",
+  "envelopes": [
+   {
+    "artifacts": [],
+    "diagnostics": [
+     {
+      "code": "USAGE",
+      "file": null,
+      "hint": "Run bcn validate and use a fingerprint from its output.",
+      "lang": null,
+      "level": "error",
+      "line": null,
+      "message": "That finding is not in the current script (it may already have been fixed).",
+      "slide": null,
+      "topic": null
+     }
+    ],
+    "duration_ms": "<N>",
+    "ok": false,
+    "results": [],
+    "schema": 1,
+    "started": "<TIME>",
+    "target": "KV7015/U01/T01",
+    "tool": "ack"
+   }
+  ],
+  "exit_code": 2,
+  "finished": "<TIME>",
+  "id": 2,
+  "label": "acknowledge MD_DATE · KV7015/U01/T01",
+  "last_event_age_ms": null,
+  "log": [
+   "{\"event\": \"log\", \"level\": \"info\", \"message\": \"$ bcn ack <ROOT>/KV7015/U01/T01 --by Tester --fingerprint MD_DATE|en|s1|x\"}"
+  ],
+  "ok": false,
+  "progress": null,
+  "started": "<TIME>",
+  "state": "failed",
+  "target_count": 1,
+  "target_index": 0,
+  "targets": [
+   "KV7015/U01/T01"
+  ]
+ },
+ "status": 200,
+ "type": "application/json"
+}

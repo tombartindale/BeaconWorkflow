@@ -1,0 +1,56 @@
+{
+ "body": {
+  "pull": {
+   "_status_version": "<N>",
+   "artifacts": [],
+   "diagnostics": [
+    {
+     "code": "SYNC_NOT_CONFIGURED",
+     "file": "programme.toml",
+     "hint": "Add [sync] remote = \"/path/to/shared/folder\" to programme.toml, or pass --remote.",
+     "lang": null,
+     "level": "error",
+     "line": null,
+     "message": "No shared folder is set.",
+     "slide": null,
+     "topic": null
+    }
+   ],
+   "duration_ms": "<N>",
+   "exit_code": 1,
+   "ok": false,
+   "results": [],
+   "schema": 1,
+   "started": "<TIME>",
+   "target": ".",
+   "tool": "sync"
+  },
+  "push": {
+   "_status_version": "<N>",
+   "artifacts": [],
+   "diagnostics": [
+    {
+     "code": "SYNC_NOT_CONFIGURED",
+     "file": "programme.toml",
+     "hint": "Add [sync] remote = \"/path/to/shared/folder\" to programme.toml, or pass --remote.",
+     "lang": null,
+     "level": "error",
+     "line": null,
+     "message": "No shared folder is set.",
+     "slide": null,
+     "topic": null
+    }
+   ],
+   "duration_ms": "<N>",
+   "exit_code": 1,
+   "ok": false,
+   "results": [],
+   "schema": 1,
+   "started": "<TIME>",
+   "target": ".",
+   "tool": "sync"
+  }
+ },
+ "status": 200,
+ "type": "application/json"
+}

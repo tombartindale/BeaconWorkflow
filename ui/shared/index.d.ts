@@ -9,14 +9,57 @@ import type {
 export * from './envelopes.gen.js';
 
 // -- pieces of envelopes, named ---------------------------------------------------------------
+// Where bcn's schema leaves an object open ({}), the shape is spelled out here from real output.
 export type Lang = 'en' | 'zh';
 export type Level = 'error' | 'warn' | 'info';
-export type Diagnostic = BcnStatusEnvelope['diagnostics'][number];
-export type DiagnosticCode = Diagnostic['code'];
-export type TopicStatus = BcnStatusEnvelope['results'][number];
-export type LangState = TopicStatus['en'];
-export type StatusArtifact = TopicStatus['artifacts'][number];
-export type StatusSummary = NonNullable<BcnStatusEnvelope['summary']>;
+type GenDiagnostic = BcnStatusEnvelope['diagnostics'][number];
+export type DiagnosticCode = GenDiagnostic['code'];
+/** Per-code extras. Only the fields the UI reads are named. */
+export interface DiagnosticData {
+  fingerprint?: string;
+  acknowledged?: { by?: string; at?: string; note?: string } | null;
+  step?: string;
+  document?: boolean;
+  time?: number | null;
+  // CUE_MISTRANSCRIPTION
+  id?: string; slide?: number; cue?: number | null; script?: string; srt?: string;
+  review?: { decision: 'accept' | 'correct'; text?: string; by?: string; at?: string } | null;
+  [k: string]: unknown;
+}
+export type Diagnostic = Omit<GenDiagnostic, 'data'> & { data?: DiagnosticData };
+export interface Blocker { code: string; message: string; file?: string | null }
+export interface StepState { exists: boolean; ok: boolean | null; fresh: boolean | null; time: string | null; skipped: boolean | null }
+type GenTopic = BcnStatusEnvelope['results'][number];
+export type LangState = Omit<NonNullable<GenTopic['en']>, 'blockers' | 'steps'> & {
+  stage: string; stage_index: number; stages: string[]; stale: boolean; stale_steps: string[]; blocked: boolean;
+  blockers: Blocker[]; next: string | null; complete: boolean; diagnostics: Record<Level, number>;
+  steps: Record<string, StepState>;
+};
+export interface StatusArtifact {
+  key: string; path: string; lang: Lang | null; kind: string; exists: boolean; bytes: number | null;
+  mtime: string | null; hydration: 'local' | 'cloud' | 'partial' | 'unknown'; stale: boolean | null; count?: number;
+}
+export type TopicStatus = Omit<GenTopic, 'en' | 'zh' | 'artifacts' | 'outcomes'> & {
+  module: string; unit: string; code: string; path: string; title: string; minutes: number | null; outcomes: string[];
+  has_dir: boolean; hydration: StatusArtifact['hydration']; unreviewed_mistranscriptions: number;
+  en: LangState; zh: LangState; artifacts: StatusArtifact[];
+};
+export interface ModuleDocument { path: string; exists: boolean; errors: number; warnings: number }
+export interface ModuleSummary {
+  topics: number; units: string[]; en: Record<string, number>; zh: Record<string, number>; complete: Record<Lang, number>;
+  blocked: number; stale: number; cloud: number; diagnostics: Record<Level, number>; unreviewed: number;
+  course_map: boolean; documents: ModuleDocument[]; errors: number; title: string; unit_titles: Record<string, string>;
+}
+export interface StatusSummary {
+  topics: number; complete: Record<Lang, number>; blocked: number; stale: number; cloud: number; cloud_share: number;
+  unreviewed: number; diagnostics: Record<Level, number>; modules: Record<string, ModuleSummary>;
+}
+export type StatusEnvelope = Omit<BcnStatusEnvelope, 'results' | 'summary' | 'diagnostics'> & {
+  results: TopicStatus[]; summary: StatusSummary; diagnostics: Diagnostic[];
+};
+export type DiagnosticsEnvelope = Omit<BcnDiagnosticsEnvelope, 'outstanding' | 'diagnostics' | 'counts'> & {
+  outstanding: Diagnostic[]; diagnostics: Diagnostic[]; counts: Record<Level, number>;
+};
 export type CodeInfo = NonNullable<BcnCodesEnvelope['codes']>[number];
 export type SyncPlanItem = NonNullable<BcnSyncEnvelope['plan']>[number];
 /** Any envelope: what a job stores, whatever the command. */
@@ -102,14 +145,14 @@ export interface BootResponse {
   root: string; prefs: Prefs; operator: string; warnings: string[];
   doctor: Queried<BcnDoctorEnvelope> | null; codes: CodeInfo[]; status_version: number;
 }
-export type StatusResponse = Queried<BcnStatusEnvelope> & { version: number; jobs_running: number };
+export type StatusResponse = Queried<StatusEnvelope> & { version: number; jobs_running: number };
 export interface TopicResponse { show: Queried<ShowEnvelope> & { _status_version?: number }; status: TopicStatus | null }
-export type TopicVerifyResponse = Queried<BcnStatusEnvelope>;
+export type TopicVerifyResponse = Queried<StatusEnvelope>;
 export interface TopicSourceResponse { exists: boolean; text: string; sha256: string | null; path: string }
 export interface TopicCheckRequest { text: string; lang: Lang }
 export type TopicCheckResponse = Queried<BcnEditEnvelope>;
 export interface TopicSaveRequest { text: string; lang: Lang; expect_sha?: string | null; overwrite?: boolean }
-export type DiagnosticsResponse = Queried<BcnDiagnosticsEnvelope>;
+export type DiagnosticsResponse = Queried<DiagnosticsEnvelope>;
 export type ReviewResponse = Queried<BcnReviewEnvelope>;
 export interface SyncResponse { pull: Queried<BcnSyncEnvelope>; push: Queried<BcnSyncEnvelope> }
 export interface JobsResponse { jobs: JobSummary[] }

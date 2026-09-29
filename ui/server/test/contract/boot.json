@@ -688,51 +688,25 @@
   ],
   "doctor": {
    "artifacts": [],
-   "diagnostics": [
-    {
-     "code": "TOOL_VERSION",
-     "file": null,
-     "hint": null,
-     "lang": null,
-     "level": "error",
-     "line": null,
-     "message": "node is 24.21.0; the pipeline is pinned to Node 22.",
-     "slide": null,
-     "topic": null
-    }
-   ],
+   "diagnostics": [],
    "duration_ms": "<N>",
-   "exit_code": 4,
-   "ok": false,
+   "exit_code": 0,
+   "ok": true,
    "results": [
     {
-     "found": "ffmpeg 7.1.1",
      "ok": true,
-     "path": "/opt/homebrew/bin/ffmpeg",
-     "pinned": "7.1",
-     "skipped": false,
      "topic": "ffmpeg"
     },
     {
-     "found": "ffprobe 7.1.1",
      "ok": true,
-     "path": "/opt/homebrew/bin/ffprobe",
-     "pinned": "7.1",
-     "skipped": false,
      "topic": "ffprobe"
     },
     {
-     "ok": false,
-     "pinned": "4.5.1",
-     "skipped": false,
+     "ok": true,
      "topic": "marp"
     },
     {
-     "found": "chrome 154.0.8037.57",
      "ok": true,
-     "path": "/Users/nhqr5/Documents/Teaching/BeaconWorkflow/tooling/vendor/chrome/chrome/mac_arm-154.0.8037.57/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-     "pinned": "154.0.8037.57",
-     "skipped": false,
      "topic": "chrome"
     }
    ],

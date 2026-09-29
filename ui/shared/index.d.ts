@@ -60,8 +60,18 @@ export type StatusEnvelope = Omit<BcnStatusEnvelope, 'results' | 'summary' | 'di
 export type DiagnosticsEnvelope = Omit<BcnDiagnosticsEnvelope, 'outstanding' | 'diagnostics' | 'counts'> & {
   outstanding: Diagnostic[]; diagnostics: Diagnostic[]; counts: Record<Level, number>;
 };
-export type CodeInfo = NonNullable<BcnCodesEnvelope['codes']>[number];
-export type SyncPlanItem = NonNullable<BcnSyncEnvelope['plan']>[number];
+export interface DoctorTool { topic: string; ok: boolean; skipped: boolean; pinned?: string; found?: string | null; path?: string | null }
+export type DoctorEnvelope = Omit<BcnDoctorEnvelope, 'results' | 'diagnostics'> & { results: DoctorTool[]; diagnostics: Diagnostic[] };
+export interface CodeInfo { code: string; level: Level; area: string; description: string }
+export interface SyncPlanItem {
+  module: string; local: string; remote: string; action: 'copy' | 'conflict' | 'one_side' | 'check' | 'failed' | 'in_sync' | string;
+  reason: string; bytes: number | null; cloud: boolean;
+}
+export type SyncEnvelope = Omit<BcnSyncEnvelope, 'plan' | 'counts' | 'diagnostics'> & {
+  direction?: 'pull' | 'push'; dry_run?: boolean; remote?: string | null; plan?: SyncPlanItem[];
+  counts?: Record<string, number>; ignored?: string[]; last_pull?: string | null; last_push?: string | null;
+  diagnostics: Diagnostic[];
+};
 /** Any envelope: what a job stores, whatever the command. */
 export interface AnyEnvelope {
   tool: string; schema: number; target: string; ok: boolean; cancelled?: boolean; started: string; duration_ms: number;
@@ -143,7 +153,7 @@ export interface JobDetail extends JobSummary {
 // -- routes --------------------------------------------------------------------------------------
 export interface BootResponse {
   root: string; prefs: Prefs; operator: string; warnings: string[];
-  doctor: Queried<BcnDoctorEnvelope> | null; codes: CodeInfo[]; status_version: number;
+  doctor: Queried<DoctorEnvelope> | null; codes: CodeInfo[]; status_version: number;
 }
 export type StatusResponse = Queried<StatusEnvelope> & { version: number; jobs_running: number };
 export interface TopicResponse { show: Queried<ShowEnvelope> & { _status_version?: number }; status: TopicStatus | null }
@@ -154,7 +164,7 @@ export type TopicCheckResponse = Queried<BcnEditEnvelope>;
 export interface TopicSaveRequest { text: string; lang: Lang; expect_sha?: string | null; overwrite?: boolean }
 export type DiagnosticsResponse = Queried<DiagnosticsEnvelope>;
 export type ReviewResponse = Queried<BcnReviewEnvelope>;
-export interface SyncResponse { pull: Queried<BcnSyncEnvelope>; push: Queried<BcnSyncEnvelope> }
+export interface SyncResponse { pull: Queried<SyncEnvelope>; push: Queried<SyncEnvelope> }
 export interface JobsResponse { jobs: JobSummary[] }
 export interface CreateJobRequest { command: string; targets: string[]; args?: JobArgs }
 export interface IntakeRequest { text: string; dry_run?: boolean; path?: string }

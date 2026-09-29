@@ -1,0 +1,160 @@
+/* Beacon UI. Quasar does almost everything; what is here has no Quasar component:
+   the module grid, stage pips, script and slide rows, the video timeline, the editor
+   gutter and the teleprompter. Stage is shown by position; colour is reserved for the
+   two overlays, stale (warning) and blocked (negative). */
+
+:root {
+  --stage-0: #e6e3dc;
+  --stage-fill: #34495c;
+  --stale-bg: #fff4e0;
+  --blocked-bg: #fdecea;
+  --line: rgba(0, 0, 0, .12);
+  --line-2: rgba(0, 0, 0, .07);
+  --panel-2: rgba(0, 0, 0, .04);
+  --narration-bg: #eef3f7;
+  --narration-line: #9db8cc;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+body.body--dark {
+  --stage-0: #2c353e;
+  --stage-fill: #b9c7d3;
+  --stale-bg: #3a2c14;
+  --blocked-bg: #3b1d1a;
+  --line: rgba(255, 255, 255, .14);
+  --line-2: rgba(255, 255, 255, .08);
+  --panel-2: rgba(255, 255, 255, .05);
+  --narration-bg: #1e2a35;
+  --narration-line: #46647d;
+}
+body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+a:not(.q-btn):not(.q-item):not(.q-tab):not(.cell) { color: var(--q-primary); text-decoration: none; }
+a:not(.q-btn):not(.q-item):not(.q-tab):not(.cell):hover { text-decoration: underline; }
+body.body--dark a:not(.q-btn):not(.q-item):not(.q-tab):not(.cell) { color: var(--q-accent); }
+.text-mono, code { font-family: var(--mono); font-size: 12.5px; }
+.page-max { max-width: 1480px; margin: 0 auto; }
+.crumbs { font-size: 12.5px; }
+.crumbs a:not(.q-btn) { color: inherit !important; opacity: .75; }
+
+/* -- stage pips: position in the sequence ------------------------------------------ */
+.pips { display: inline-flex; gap: 2px; vertical-align: middle; }
+.pips i { width: 9px; height: 9px; border-radius: 2px; background: var(--stage-0); display: block; }
+.pips i.on { background: var(--stage-fill); }
+.pips.lg i { width: 16px; height: 10px; }
+
+/* -- programme: stacked stage bars --------------------------------------------------- */
+.stackbar { display: flex; height: 12px; border-radius: 3px; overflow: hidden; background: var(--stage-0); flex: 1; }
+.stackbar span { display: block; height: 100%; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+/* -- module grid: one split cell per topic --------------------------------------------- */
+.topic-grid { border-collapse: separate; border-spacing: 6px; }
+.topic-grid th { font-size: 12px; font-weight: 600; opacity: .7; text-align: left; }
+.topic-grid th.unit { vertical-align: top; padding-top: 10px; white-space: nowrap; }
+.topic-grid th.unit .t { display: block; font-weight: 400; max-width: 140px; white-space: normal; }
+.cell {
+  position: relative; display: grid; grid-template-columns: 1fr 1fr; min-width: 150px; min-height: 64px;
+  border: 1px solid var(--line); border-radius: 6px; color: inherit; text-decoration: none; overflow: hidden;
+}
+.cell.one { grid-template-columns: 1fr; }
+.cell:hover { border-color: var(--q-primary); }
+.cell.selected { outline: 2px solid var(--q-primary); outline-offset: 1px; }
+.cell.cloud { border-style: dashed; background: repeating-linear-gradient(-45deg, transparent 0 6px, var(--panel-2) 6px 8px); }
+.cell .code { position: absolute; top: 3px; left: 6px; font-size: 11px; font-weight: 700; opacity: .75; }
+.cell .sel { position: absolute; top: 3px; right: 4px; margin: 0; }
+.cell .half { padding: 20px 6px 6px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cell .half + .half { border-left: 1px solid var(--line-2); }
+.cell .half .pips i { width: 6px; height: 8px; border-radius: 1.5px; }
+.cell .half .lbl { font-size: 10.5px; opacity: .8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell .half.stale { background: var(--stale-bg); box-shadow: inset 0 -3px 0 var(--q-warning); }
+.cell .half.blocked { background: var(--blocked-bg); box-shadow: inset 0 -3px 0 var(--q-negative); }
+.cell .half.stale.blocked { box-shadow: inset 0 -3px 0 var(--q-negative), inset 0 -6px 0 var(--q-warning); }
+.cell.planned { background: transparent; border-style: dotted; }
+.cell.dim { opacity: .25; }
+.cell .unrev { position: absolute; bottom: 2px; right: 4px; font-size: 10px; color: var(--q-warning); font-weight: 700; }
+
+/* -- topic: script and slide rows ------------------------------------------------------ */
+.panes { display: grid; gap: 16px; }
+.panes.side { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.panes.stacked { grid-template-columns: 1fr; }
+@media (max-width: 1100px) { .panes.side { grid-template-columns: 1fr; } }
+.pane-scroll { max-height: 70vh; overflow: auto; }
+.sslide { border-top: 1px solid var(--line-2); padding: 12px 14px; }
+.sslide:first-child { border-top: 0; }
+.sslide .shead { display: flex; gap: 8px; align-items: baseline; margin-bottom: 6px; }
+.sslide .n { font-weight: 700; opacity: .6; font-size: 12px; min-width: 22px; }
+.sslide .content { font-size: 13px; }
+.sslide .content h1, .sslide .content h2, .sslide .content h3 { font-size: 14.5px; line-height: 1.3; margin: 0 0 4px; font-weight: 600; letter-spacing: 0; }
+.sslide .content ul, .sslide .content ol { margin: 4px 0; padding-left: 20px; }
+.sslide .content p { margin: 4px 0; }
+.sslide .content img { max-width: 60%; max-height: 140px; display: block; margin: 6px 0; border: 1px solid var(--line); }
+.narration { margin-top: 8px; padding: 8px 10px; background: var(--narration-bg); border-left: 3px solid var(--narration-line); font-style: italic; font-size: 13px; border-radius: 0 4px 4px 0; }
+.narration .wc { font-style: normal; float: right; margin-left: 8px; }
+.slide-pair { display: grid; gap: 8px; }
+.slide-pair.two { grid-template-columns: 1fr 1fr; }
+.thumb { position: relative; cursor: pointer; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--panel-2); }
+.thumb img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.thumb .i { position: absolute; bottom: 4px; left: 4px; font-size: 10.5px; background: rgba(0, 0, 0, .55); color: #fff; padding: 0 5px; border-radius: 3px; }
+.thumb .flag { position: absolute; top: 3px; right: 4px; }
+.thumb.flagged { border-color: var(--q-negative); box-shadow: 0 0 0 1px var(--q-negative); }
+.thumb.flagged-warn { border-color: var(--q-warning); }
+.thumb.missing { display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9; font-size: 12px; opacity: .6; cursor: default; }
+.lightbox-frame { position: relative; }
+.lightbox-frame img { display: block; width: 100%; }
+.safe-area { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(192, 57, 43, .25); border-top: 2px dashed #c0392b; }
+.safe-area span { position: absolute; top: 4px; left: 6px; font-size: 11px; color: #fff; background: rgba(0, 0, 0, .6); padding: 0 4px; border-radius: 2px; }
+
+/* -- topic: video with cue timeline ---------------------------------------------------- */
+.player-main { display: grid; grid-template-columns: 3fr 2fr; gap: 10px; align-items: start; }
+.player-main video { width: 100%; background: #000; border-radius: 4px; }
+.current-slide img { width: 100%; border-radius: 4px; border: 1px solid var(--line); }
+.timeline { position: relative; height: 34px; margin: 10px 0 6px; background: var(--panel-2); border-radius: 4px; cursor: pointer; }
+.timeline .played { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(31, 95, 139, .18); pointer-events: none; }
+.timeline .head { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--q-primary); pointer-events: none; }
+.timeline .mark { position: absolute; top: 4px; transform: translateX(-50%); min-width: 20px; height: 26px; padding: 0 4px;
+  border: 1px solid var(--line); border-radius: 3px; background: var(--q-dark-page, #fff); font-size: 11px; cursor: pointer; color: inherit; }
+body:not(.body--dark) .timeline .mark { background: #fff; }
+.timeline .mark.current { border-color: var(--q-primary); box-shadow: 0 0 0 1px var(--q-primary); }
+.timeline .mark.low { border-color: var(--q-warning); }
+.timeline .mark.manual { border-style: dashed; }
+tr.current td { background: rgba(31, 95, 139, .1); }
+tr.low td.conf { color: var(--q-warning); font-weight: 600; }
+
+/* -- document viewer -------------------------------------------------------------------- */
+.doclines { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: 12.5px; }
+.doclines td { padding: 0 8px; vertical-align: top; white-space: pre-wrap; }
+.doclines td.ln { text-align: right; opacity: .5; user-select: none; width: 1%; }
+.doclines tr.flag-error td { background: var(--blocked-bg); }
+.doclines tr.flag-warn td { background: var(--stale-bg); }
+.doclines tr.note td { font-family: system-ui, sans-serif; padding-bottom: 6px; }
+
+/* -- diffs and logs --------------------------------------------------------------------- */
+.diff, .log { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; max-height: 360px; overflow: auto;
+  background: var(--panel-2); border-radius: 4px; padding: 8px; }
+.diff .add { color: var(--q-positive); }
+.diff .del { color: var(--q-negative); }
+.diff .hunk { opacity: .6; }
+.log .prog { opacity: .6; }
+.log .err { color: var(--q-negative); }
+
+/* -- script editor: a textarea with a line-number gutter that follows wrapped lines ----- */
+.ed-box { position: relative; display: grid; grid-template-columns: 48px 1fr; height: 72vh; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.ed-gutter { overflow: hidden; font-family: var(--mono); font-size: 13px; line-height: 21px; text-align: right; padding: 8px 6px 8px 0; opacity: .55; user-select: none; background: var(--panel-2); }
+.ed-gutter .ln.error { color: var(--q-negative); font-weight: 700; opacity: 1; }
+.ed-gutter .ln.warn { color: var(--q-warning); font-weight: 700; opacity: 1; }
+.ed-text, .ed-measure { font-family: var(--mono); font-size: 13px; line-height: 21px; padding: 8px 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ed-text { border: 0; outline: 0; resize: none; background: transparent; color: inherit; height: 100%; overflow: auto; tab-size: 2; }
+.ed-measure { position: absolute; visibility: hidden; left: 48px; top: 0; pointer-events: none; }
+
+/* -- teleprompter ------------------------------------------------------------------------ */
+body.prompting { background: #000; overflow: hidden; }
+.prompter { position: fixed; inset: 0; overflow-y: scroll; background: #000; color: #f4f1e8; outline: none; scrollbar-width: none; }
+.prompter::-webkit-scrollbar { display: none; }
+.prompter-text { margin: 0 auto; padding: 33vh 0 70vh; line-height: 1.35; font-family: system-ui, sans-serif; }
+.prompter-text p { margin: 0 0 .7em; }
+.prompter-title { font-size: .5em; opacity: .5; margin-bottom: 1em; }
+.prompter-divider { font-size: .38em; color: #d9a441; border-top: 1px solid #333; padding-top: .4em; margin: 1.1em 0 .5em; letter-spacing: .04em; }
+.prompter-end { font-size: .4em; opacity: .4; text-align: center; margin-top: 2em; }
+.prompter-eyeline { position: fixed; left: 0; right: 0; top: 33vh; display: flex; justify-content: space-between; pointer-events: none; color: #d9a441; font-size: 22px; padding: 0 12px; transform: translateY(-50%); }
+.prompter-countdown { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 30vh; color: #d9a441; background: rgba(0, 0, 0, .6); pointer-events: none; }
+.prompter-bar { position: fixed; left: 0; right: 0; bottom: 0; transition: opacity .4s; }
+.prompter-bar.faded { opacity: 0; }

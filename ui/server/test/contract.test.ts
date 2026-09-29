@@ -73,7 +73,12 @@ function check(name: string, reply: Reply) {
 
 describe(`API contract (${process.env.BEACON_BACKEND || 'node'} backend)`, () => {
   describe('reads', () => {
-    it('boot', async () => check('boot', await call('/api/boot')));
+    it('boot', async () => {
+      // Tool versions and paths belong to the machine, not the contract: keep which tools and whether they pass.
+      const r = await call('/api/boot');
+      const body = r.body as { doctor: { results: Array<{ topic: string; ok: boolean }> } };
+      check('boot', { ...r, body: { ...body, doctor: { ...body.doctor, results: body.doctor.results.map(({ topic, ok }) => ({ topic, ok })) } } });
+    });
     it('status', async () => check('status', await call('/api/status')));
     it('topic', async () => check('topic', await call(`/api/topic/${TOPIC}`)));
     it('topic verify', async () => check('topic-verify', await call(`/api/topic/${TOPIC}?verify=1`)));

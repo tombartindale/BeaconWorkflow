@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join, resolve, sep } from 'node:path';
-import type { BcnCodesEnvelope, BcnDoctorEnvelope, CodeInfo, JobArgs, JobSummary, Queried } from '@beacon/shared';
+import type { CodeInfo, DoctorEnvelope, JobArgs, JobSummary, Queried } from '@beacon/shared';
 import { Bcn } from './bcn.js';
 import { Bus } from './bus.js';
 import { DB } from './db.js';
@@ -70,7 +70,7 @@ export class App {
   readonly status: StatusCache;
   readonly jobs: JobQueue;
   readonly watcher: Watcher;
-  doctor: Queried<BcnDoctorEnvelope> | null = null;
+  doctor: Queried<DoctorEnvelope> | null = null;
   codes: CodeInfo[] = [];
   private queryCache = new Map<string, { at: number; env: Record<string, unknown> }>();
 
@@ -101,8 +101,8 @@ export class App {
 
   private async warm(): Promise<void> {
     try {
-      this.doctor = await this.bcn.query<BcnDoctorEnvelope>('doctor', [this.root]);
-      this.codes = (await this.bcn.query<BcnCodesEnvelope>('codes')).codes || [];
+      this.doctor = await this.bcn.query<DoctorEnvelope>('doctor', [this.root]);
+      this.codes = (await this.bcn.query<{ codes?: CodeInfo[] }>('codes')).codes || [];
     } catch (e) {
       if (!(e instanceof BcnError)) throw e;
       this.warnings.push(`bcn could not run: ${e.message}`);

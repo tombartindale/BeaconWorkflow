@@ -3,7 +3,7 @@
   "private": true,
   "description": "Beacon UI: a Node backend over the bcn CLI and a Quasar front end. Versions are exact on purpose.",
   "engines": {
-    "node": ">=24"
+    "node": ">=22.22 <23"
   },
   "workspaces": [
     "shared",

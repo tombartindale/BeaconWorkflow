@@ -1,0 +1,28 @@
+{
+  "name": "@beacon/app",
+  "private": true,
+  "description": "Beacon UI front end: Vue 3 and Quasar. Builds a browser app into dist/spa, served by @beacon/server; Quasar's Electron mode can build it as a desktop app later.",
+  "productName": "Beacon",
+  "type": "module",
+  "scripts": {
+    "dev": "quasar dev",
+    "build": "quasar build",
+    "typecheck": "vue-tsc --noEmit",
+    "postinstall": "quasar prepare --silent"
+  },
+  "dependencies": {
+    "@quasar/extras": "2.1.0",
+    "pinia": "4.0.3",
+    "quasar": "2.34.0",
+    "vue": "3.5.43",
+    "vue-router": "5.3.1"
+  },
+  "devDependencies": {
+    "@beacon/shared": "*",
+    "@quasar/app-vite": "3.10.1",
+    "@types/node": "24.19.0",
+    "autoprefixer": "10.6.1",
+    "postcss": "8.5.28",
+    "vue-tsc": "3.3.11"
+  }
+}

@@ -1,0 +1,37 @@
+# The default Beacon theme. Everything a renderer or checker needs to know
+# about the look is declared here or in the CSS, never in code.
+
+css = "default.css"
+
+[slide]
+width = 1920
+height = 1080
+# image_scale = 1.5   # set when a 720p theme must export 1080p PNGs
+
+[safe_area]
+# Pixels reserved at the bottom of the frame for burned-in subtitles.
+# PLACEHOLDER: depends on the partner's composite layout, not yet agreed.
+bottom = 216
+
+[font_size]
+# Chinese needs a larger size for equivalent legibility.
+en = 44
+zh = 50
+
+[fonts]
+# Font stack per language. The first family is also used for burned-in subtitles.
+en = ["Helvetica Neue", "Helvetica", "Arial", "sans-serif"]
+zh = ["Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "sans-serif"]
+
+# Font files the theme carries, so a render does not depend on what the build
+# machine happens to have installed. Paths are relative to this directory.
+# Noto Sans SC is SIL OFL 1.1 (fonts/OFL.txt).
+[[font_face]]
+family = "Noto Sans SC"
+file = "fonts/NotoSansSC-Regular.otf"
+weight = 400
+
+[[font_face]]
+family = "Noto Sans SC"
+file = "fonts/NotoSansSC-Bold.otf"
+weight = 700

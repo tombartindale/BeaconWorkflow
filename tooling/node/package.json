@@ -1,0 +1,14 @@
+{
+  "name": "bcn-render",
+  "private": true,
+  "description": "Pinned Marp toolchain for bcn render. Versions are exact on purpose; do not loosen.",
+  "type": "module",
+  "dependencies": {
+    "@marp-team/marp-cli": "4.5.1",
+    "@marp-team/marp-core": "4.4.0",
+    "puppeteer-core": "24.43.1"
+  },
+  "devDependencies": {
+    "@puppeteer/browsers": "3.2.3"
+  }
+}

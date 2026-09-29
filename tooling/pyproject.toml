@@ -1,0 +1,22 @@
+[project]
+name = "bcn"
+version = "0.1.0"
+description = "Beacon delivery pipeline: topic markdown + edited video + SRT -> delivery package"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+bcn = "bcn.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["bcn*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

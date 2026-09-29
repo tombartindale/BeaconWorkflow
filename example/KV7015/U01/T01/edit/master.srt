@@ -1,0 +1,171 @@
+1
+00:00:00,600 --> 00:00:03,457
+Every research project begins with a
+topic,
+
+2
+00:00:03,577 --> 00:00:07,251
+but a topic is not something you can
+research.
+
+3
+00:00:07,371 --> 00:00:12,677
+A topic is an area of interest, like
+social media or climate policy.
+
+4
+00:00:12,797 --> 00:00:16,878
+A question is something you can actually
+answer with evidence.
+
+5
+00:00:16,998 --> 00:00:23,121
+In this topic we will look at how to move
+from one to the other,
+
+6
+00:00:23,241 --> 00:00:27,731
+and why that move matters so much for
+everything that follows.
+
+7
+00:00:28,351 --> 00:00:31,208
+Think of the process as a funnel.
+
+8
+00:00:31,328 --> 00:00:34,185
+At the top sits your broad topic.
+
+9
+00:00:34,305 --> 00:00:37,570
+Each step down the funnel adds a
+constraint.
+
+10
+00:00:37,690 --> 00:00:42,996
+You might narrow by population, by place,
+by time period or by outcome.
+
+11
+00:00:43,116 --> 00:00:48,831
+By the bottom of the funnel you have
+something small enough to study properly,
+
+12
+00:00:48,951 --> 00:00:54,257
+but still connected to the area that
+interested you in the first place.
+
+13
+00:00:54,877 --> 00:00:57,734
+The first constraint is usually the
+population.
+
+14
+00:00:57,854 --> 00:01:01,119
+Social media is too broad, but social
+media
+
+15
+00:01:01,239 --> 00:01:04,913
+use among first year nursing students is
+much narrower.
+
+16
+00:01:05,033 --> 00:01:11,155
+If you cannot describe your population in
+a sentence, the question is not ready yet.
+
+17
+00:01:11,775 --> 00:01:17,081
+A useful tool for health and social care
+questions is the PICO framework.
+
+18
+00:01:17,201 --> 00:01:20,875
+Peek oh stands for population,
+intervention, comparison and outcome.
+
+19
+00:01:20,995 --> 00:01:24,260
+Filling in each part forces you to be
+
+20
+00:01:24,380 --> 00:01:28,053
+explicit about what you are measuring and
+against what.
+
+21
+00:01:28,173 --> 00:01:31,031
+Not every question needs all four parts,
+
+22
+00:01:31,151 --> 00:01:36,865
+but working through them quickly shows
+which parts of your question are still vague.
+
+23
+00:01:37,485 --> 00:01:41,975
+Once you know your outcome, decide how you
+would measure it.
+
+24
+00:01:42,095 --> 00:01:46,176
+You might use a like it scale in a
+questionnaire,
+
+25
+00:01:46,296 --> 00:01:49,153
+a set of interviews, or existing records.
+
+26
+00:01:49,273 --> 00:01:53,355
+If you cannot imagine any way to measure
+the outcome,
+
+27
+00:01:53,475 --> 00:01:57,149
+that is a sign the question needs more
+work.
+
+28
+00:01:57,269 --> 00:02:02,575
+The measurement you choose will also shape
+the design of the whole study.
+
+29
+00:02:03,195 --> 00:02:06,868
+Before you commit, check your question
+against three tests.
+
+30
+00:02:06,988 --> 00:02:10,662
+Is it answerable with evidence you could
+realistically collect?
+
+31
+00:02:10,782 --> 00:02:16,088
+Is it narrow enough that you can actually
+get it done in time?
+
+32
+00:02:16,208 --> 00:02:18,657
+And does it still interest you?
+
+33
+00:02:18,777 --> 00:02:21,634
+A good research question passes all three,
+
+34
+00:02:21,754 --> 00:02:26,244
+and it will guide every decision you make
+from here on.
+
+35
+00:02:26,364 --> 00:02:29,629
+Write it down, share it with a colleague,
+
+36
+00:02:29,749 --> 00:02:35,055
+and ask them to explain it back to you in
+their own words.

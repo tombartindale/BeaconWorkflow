@@ -1,0 +1,30 @@
+# Beacon programme configuration. Anything not set here takes the default in
+# tooling/bcn/config.py. Values marked PLACEHOLDER are unconfirmed with the partner.
+
+[programme]
+name = "Beacon example programme"
+theme = "default"
+
+[validate]
+forbidden = ["semester", "deadline", "next week", "Cohort 7"]
+
+[cues]
+min_confidence = 0.8     # start strict; loosen only if a real edited topic proves it necessary
+max_divergence = 0.10
+
+[subtitles]
+format = "srt"           # PLACEHOLDER: "srt", "vtt" or "both"
+
+[delivery]
+transcode = false        # PLACEHOLDER: partner delivery spec unconfirmed
+
+[compose]
+layout = "inset"         # PLACEHOLDER: "inset" or "side_by_side"
+
+[bumpers]
+intro = ""
+outro = ""
+
+[qa]
+unit_minutes_min = 85
+unit_minutes_max = 110

@@ -1,0 +1,158 @@
+1
+00:00:00,600 --> 00:00:05,906
+In the previous topic we narrowed a broad
+area down to a question.
+
+2
+00:00:06,026 --> 00:00:08,475
+Now we ask a harder thing.
+
+3
+00:00:08,595 --> 00:00:11,044
+Can the question actually be answered?
+
+4
+00:00:11,164 --> 00:00:13,613
+An answerable question has clear terms,
+
+5
+00:00:13,733 --> 00:00:17,407
+relies on evidence that exists or can be
+collected,
+
+6
+00:00:17,527 --> 00:00:22,833
+and has a scope that fits the time and
+resources you really have.
+
+7
+00:00:23,453 --> 00:00:26,310
+Every important word in your question
+needs
+
+8
+00:00:26,430 --> 00:00:29,287
+a definition that someone else could
+apply.
+
+9
+00:00:29,407 --> 00:00:34,305
+If your question mentions wellbeing, what
+exactly do you mean by it,
+
+10
+00:00:34,425 --> 00:00:37,690
+and how would two different researchers
+recognise it?
+
+11
+00:00:37,810 --> 00:00:41,892
+An operational definition turns an
+abstract idea into something observable.
+
+12
+00:00:42,012 --> 00:00:46,910
+Without one, two studies of the same
+question can reach opposite answers.
+
+13
+00:00:47,530 --> 00:00:49,162
+Next, think about evidence.
+
+14
+00:00:49,282 --> 00:00:55,405
+Some questions are perfectly clear but
+impossible to answer because the data cannot be collected,
+
+15
+00:00:55,525 --> 00:00:57,566
+or cannot be collected ethically.
+
+16
+00:00:57,686 --> 00:01:01,359
+Others can be answered from data that
+already exists,
+
+17
+00:01:01,479 --> 00:01:04,336
+which saves a great deal of time.
+
+18
+00:01:04,456 --> 00:01:10,579
+Ask where the evidence would come from
+before you fall in love with the question.
+
+19
+00:01:11,199 --> 00:01:14,056
+Scope is where many good questions fail.
+
+20
+00:01:14,176 --> 00:01:19,482
+A question about every school in the
+country may be answerable in principle,
+
+21
+00:01:19,602 --> 00:01:23,276
+but not by one researcher in a few months.
+
+22
+00:01:23,396 --> 00:01:27,069
+Be honest about your time, your access to
+participants,
+
+23
+00:01:27,189 --> 00:01:30,862
+and the skills you already have or can
+learn.
+
+24
+00:01:30,982 --> 00:01:33,431
+Descriptive questions ask what is
+happening.
+
+25
+00:01:33,551 --> 00:01:35,184
+Causal questions ask why.
+
+26
+00:01:35,304 --> 00:01:38,978
+Causal questions are usually much harder
+to answer well,
+
+27
+00:01:39,098 --> 00:01:42,363
+because you have to rule out other
+explanations.
+
+28
+00:01:42,483 --> 00:01:47,381
+Neither kind is better, but they call for
+very different research designs.
+
+29
+00:01:48,001 --> 00:01:51,674
+To finish, run your question through a
+quick checklist.
+
+30
+00:01:51,794 --> 00:01:53,427
+Are the terms defined?
+
+31
+00:01:53,547 --> 00:01:57,220
+Do you know where the evidence will come
+from?
+
+32
+00:01:57,340 --> 00:01:59,789
+Does the scope fit your resources?
+
+33
+00:01:59,909 --> 00:02:03,583
+Do you know whether it is descriptive or
+causal?
+
+34
+00:02:03,703 --> 00:02:10,233
+If you can answer yes to all four, your
+question is ready for the next stage.

@@ -16,13 +16,54 @@ Without it, that state lives in a folder tree and a producer's head. The CLI can
 
 ## 2. Architecture
 
-A local web application: a Python backend on the build machine that shells out to `bcn`, and a browser front end served from it. Not Electron, not a TUI.
+A local web application: a Node backend on the build machine that shells out to `bcn`, and a browser front end served from it. It is built so it can be packaged as an Electron app later without rewriting either half. Not a TUI.
 
 - The backend is the only thing that runs `bcn`. It queues jobs, enforces a concurrency limit, and streams progress.
-- The front end talks to the backend over HTTP for state and actions, and a WebSocket or SSE stream for progress.
+- The front end talks to the backend over HTTP for state and actions, and an SSE stream for progress.
 - Single user, bound to localhost, no authentication in version one. Say so in the README rather than half-implementing auth.
+- `bcn` stays a Python CLI. The UI's move to Node changes nothing about the pipeline, and the UI still never imports or reimplements any of it.
 
 **If more than one person needs it**, that is a different application: hosted, authenticated, and with a real answer to two people running `package` on the same topic at once. Do not drift into it. Decide it deliberately.
+
+### 2.1 Stack
+
+Off-the-shelf parts throughout. The UI's value is in what it shows, not in its plumbing, so nothing here is hand-rolled where a maintained library already does the job.
+
+| Part | Choice | Why |
+| --- | --- | --- |
+| Language | TypeScript, both halves | One set of types for the API, `bcn`'s envelopes and job records, shared by the front end and backend so they cannot drift apart silently |
+| Front end | Vue 3 with **Quasar** | A full component set (tables, dialogs, tabs, notifications, tooltips, progress, file drop) with its own styling, dark mode and icons. Quasar CLI builds the same project as a browser SPA now and as an Electron app later |
+| Styling | Quasar's components and utility classes | No Tailwind. It overlaps with Quasar's utility classes and fights its component styles. The house palette is set once as Quasar brand colours. The only custom CSS is for things no component covers: the module grid cells, the video timeline and the teleprompter |
+| Routing and state | Vue Router (hash history), Pinia | Standard with Quasar. Hash URLs keep `#/topic/…` links working |
+| Backend | Node 22 LTS, **Fastify** | Small, fast, typed, with a plugin model for static files and SSE |
+| Persistence | SQLite through `better-sqlite3` | The same small file and schema as before (section 3). Works under Electron once rebuilt for it |
+| Tests | Vitest | For both halves, including API contract tests against a fixture programme root (`example/`) |
+
+### 2.2 Shape of the code
+
+```
+ui/
+  package.json      npm workspaces: shared, server, app
+  shared/           TypeScript types only: API requests and responses, envelopes, jobs, prefs, SSE events
+  server/           Fastify backend. Exports createServer({ root, bcn, dataDir, port }) and never starts itself on import
+    bin/beacon-ui   CLI entry: parses --root, --port, --bcn, --data-dir, then calls createServer
+  app/              Quasar project: src/ is the front end, src-electron/ is added only when Electron is
+```
+
+The backend being a library with a thin CLI on top is what makes Electron cheap later. The Electron main process calls the same `createServer()` on a free localhost port and opens a window on it. The front end does not know or care which one started it.
+
+### 2.3 The HTTP API is the contract
+
+The Node backend serves the same routes, request bodies, responses and SSE events as the Python backend it replaces, as listed in [the current server](../ui/beacon_ui/server.py). The front end can then be built against either backend, and contract tests can run the same requests against both during the move and require identical results, apart from timestamps and ids.
+
+The rules that live in the backend move across unchanged:
+
+- Host and Origin checks refuse any request that is not from localhost.
+- Every file path from the front end is resolved beneath the root, and a path that escapes it, including through a symlink, is refused.
+- Job commands and arguments are checked against an allowlist before anything runs.
+- Jobs run `bcn` with `spawn`, never through a shell. Cancel sends SIGINT.
+- `bcn` is found in the same order as before: `--bcn`, `$BCN`, `tooling/.venv/bin/bcn`, then `PATH`.
+- The tree watcher polls file stats, restricted to the names the pipeline cares about, rather than using `fs.watch`. File events from OneDrive and other cloud folders are unreliable, and a watcher that misses changes is worse than a slow one.
 
 ---
 
@@ -195,15 +236,19 @@ Two actions, because this is a batch handover rather than a per-topic one.
 
 ## 8. Build order
 
-1. Read-only. `status` polling, programme and module views. Useful immediately and cannot break anything.
-2. Topic view, without the player.
-3. Jobs: queue, run, progress, cancel.
-4. Intake paste box. Earliest point at which the UI saves real time.
-5. Diagnostics view.
-6. Draft player with cues on the timeline.
-7. Translation round trip, which is not needed until translation starts.
+Version one was built in this order, on a Python standard-library backend and a front end with no framework: read-only status views, then the topic view, jobs, intake, diagnostics, the draft player, and the translation round trip.
 
-Steps 1 and 4 together already justify the build. Everything after is compounding.
+It is now being rebuilt on the stack in section 2.1. The Python UI keeps working until the new one matches it, so the order is:
+
+1. **Shared types and contract tests.** Write the types in `ui/shared/` from what the Python backend actually returns, and a Vitest suite that drives its API against `example/`. This pins down behaviour before anything is rewritten.
+2. **Node backend.** Port it in the same order the data flows: `bcn` runner, SQLite store, event feed, status cache and tree watcher, job queue, then the routes. It is done when the contract tests pass against both backends.
+3. **Quasar front end, read-only.** App shell and navigation, programme, module, topic (without the player), document and settings views.
+4. **Actions.** Jobs page, running jobs from the module and topic views, diagnostics with acknowledge, intake.
+5. **The heavy views.** Draft player with cues on the timeline, script editor, teleprompter, translation, sync.
+6. **Cut-over.** `start.sh` and `setup.sh` switch to the Node UI, and the Python `ui/beacon_ui` package is deleted in the same change.
+7. **Electron,** only when it is wanted: add Quasar's Electron mode, start `createServer()` from the main process, and settle the packaging question in section 9.
+
+Steps 1 and 2 are where the risk is. After that the front end can be built one view at a time against a backend that already works.
 
 ---
 
@@ -212,3 +257,4 @@ Steps 1 and 4 together already justify the build. Everything after is compoundin
 - Whether anyone other than the producer needs access, which decides localhost versus hosted and is much cheaper to answer now than to retrofit.
 - Whether editorial staff should have the intake box without the ability to run jobs, which is a simple role split if it is designed in and awkward if it is not.
 - Whether the UI should show the SharePoint library at all, or stay purely a view of the local tree. Staying local is simpler and probably right for version one.
+- What an Electron build ships. Packaging the UI is straightforward. Packaging what it runs is not: `bcn` needs Python, the pinned Marp toolchain, Chrome, ffmpeg and the fonts, which is several hundred megabytes and differs by platform. The options are an app that expects `scripts/setup.sh` to have been run (simple, and fine for one machine), or one that bundles the toolchain (self-contained, and a much larger job). Decide this before starting step 7, not during it.

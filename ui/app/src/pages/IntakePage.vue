@@ -73,7 +73,7 @@ const good = (action: unknown) => ['written', 'unchanged', 'would_write'].includ
           </q-card-section>
           <q-list separator>
             <q-item v-for="r in env.results" :key="r.topic" class="column items-stretch">
-              <div class="row items-center q-gutter-sm">
+              <div class="row items-center gap-sm">
                 <StateChip :kind="good(r.action) ? 'ok' : 'blocked'" :label="LABEL[r.action as string] || (r.action as string) || 'failed'" />
                 <router-link v-if="r.path" :to="`/topic/${r.topic}`">{{ r.topic }}</router-link><strong v-else>{{ r.topic }}</strong>
                 <StateChip v-if="r.validate_ok !== undefined && r.validate_ok !== null" :kind="r.validate_ok ? 'ok' : 'error'" :label="r.validate_ok ? 'validates' : 'validation errors'" />

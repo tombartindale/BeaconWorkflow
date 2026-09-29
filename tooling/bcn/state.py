@@ -32,11 +32,11 @@ UPSTREAM = {
     ("cues", "en"): [("validate", "en")],
     ("subtitles", "en"): [("cues", "en")],
     ("compose", "en"): [("render", "en"), ("cues", "en")],
-    ("package", "en"): [("validate", "en"), ("render", "en"), ("cues", "en"), ("subtitles", "en")],
+    ("package", "en"): [("validate", "en"), ("render", "en"), ("cues", "en"), ("subtitles", "en"), ("compose", "en")],
     ("render", "zh"): [("validate", "zh")],
     ("subtitles", "zh"): [("validate", "zh")],
     ("compose", "zh"): [("render", "zh")],
-    ("package", "zh"): [("validate", "zh"), ("render", "zh"), ("subtitles", "zh"), ("package", "en")],
+    ("package", "zh"): [("validate", "zh"), ("render", "zh"), ("subtitles", "zh"), ("compose", "zh"), ("package", "en")],
 }
 
 
@@ -88,6 +88,11 @@ class Step:
     @property
     def result(self) -> dict[str, Any]:
         return ((self.env or {}).get("results") or [{}])[0]
+
+    @property
+    def delivered(self) -> bool:
+        """compose only: ok, fresh, and not --draft, so package can act on it."""
+        return self.ok and self.fresh and self.result.get("mode") != "draft"
 
     def errors(self) -> list[dict[str, Any]]:
         return [d for d in (self.env or {}).get("diagnostics", []) if d.get("level") == "error"]
@@ -258,14 +263,16 @@ class TopicState:
             "rendered": render.ok and bool(pngs) and pdf.exists,
             "recorded": video.exists and srt.exists,
             "cued": cues_csv.exists,
-            "packaged": manifest_ok,
+            # Delivery requires a full (non-draft) compose, so package (and hence "packaged")
+            # depends on it: compose.ok is a legitimate delivery gate, not scan noise.
+            "packaged": manifest_ok and compose.delivered,
         }
         fresh = {
             "validated": validate.fresh,
             "rendered": render.fresh and all((p.mtime or 0) >= (src.mtime or 0) for p in pngs),
             "recorded": True,
             "cued": cues.fresh and (cues_csv.mtime or 0) >= max(src.mtime or 0, srt.mtime or 0, video.mtime or 0),
-            "packaged": package.fresh,
+            "packaged": package.fresh and compose.fresh,
         }
         self._walk(st, exist, fresh)
 
@@ -278,11 +285,17 @@ class TopicState:
 
         # Next: the first step whose result is missing, failed or stale.
         order: list[tuple[str, Step | None]] = [("validate", validate), ("render", render), ("await_recording", None),
-                                                ("cues", cues), ("subtitles", subtitles), ("package", package)]
+                                                ("cues", cues), ("subtitles", subtitles), ("compose", compose),
+                                                ("package", package)]
         st.next = None
         for name, s in order:
             if s is None:
                 if not exist["recorded"]:
+                    st.next = name
+                    break
+                continue
+            if name == "compose":
+                if not s.delivered:
                     st.next = name
                     break
                 continue
@@ -301,6 +314,7 @@ class TopicState:
         record = fsutil.read_json(t.translation_file) if xl.exists else None
         exported = bool(record and record.get("exports"))
         returned = zsrc.exists and zsrt.exists
+        video = self.f("edit/master.mp4", t.video)
         pngs = [self.f(f"build/slides/zh/{p.name}", p) for p in self.pngs["zh"]]
         zsubs = self.f(f"build/subtitles/{t.id}.zh.srt", t.subtitle_out("zh", "srt"))
         manifest = self.f("out/manifest.zh.json", t.manifest("zh"))
@@ -310,7 +324,8 @@ class TopicState:
         validate = self.step("validate", "zh", [zsrc, src])
         subtitles = self.step("subtitles", "zh", [zsrt, srt, prog])
         render = self.step("render", "zh", [zsrc, theme_fi])
-        compose = self.step("compose", "zh", [zsubs, *pngs])
+        # Mandarin's compose builds its own delivered video from the shared presenter footage.
+        compose = self.step("compose", "zh", [video, zsubs, *pngs])
         package = self.step("package", "zh", [zsrc, zsrt, *pngs, zsubs, en_manifest])
 
         exist = {
@@ -318,7 +333,8 @@ class TopicState:
             "returned": returned,
             "parity_checked": validate.ok and subtitles.ok,
             "rendered": render.ok and bool(pngs),
-            "packaged": manifest.exists and self._manifest_intact("manifest.zh.json"),
+            "packaged": manifest.exists and self._manifest_intact("manifest.zh.json")
+                        and compose.delivered,
         }
         fresh = {
             "out_for_translation": True,
@@ -326,7 +342,7 @@ class TopicState:
             "returned": (zsrc.mtime or 0) >= (src.mtime or 0) or not returned,
             "parity_checked": validate.fresh and subtitles.fresh,
             "rendered": render.fresh,
-            "packaged": package.fresh,
+            "packaged": package.fresh and compose.fresh,
         }
         self._walk(st, exist, fresh)
         for s in (validate, subtitles, render, compose, package):
@@ -346,7 +362,13 @@ class TopicState:
             if not fresh["returned"]:
                 st.next = "translation_export"
             else:
-                for name, s in (("validate", validate), ("subtitles", subtitles), ("render", render), ("package", package)):
+                for name, s in (("validate", validate), ("subtitles", subtitles), ("render", render),
+                                ("compose", compose), ("package", package)):
+                    if name == "compose":
+                        if not s.delivered:
+                            st.next = name
+                            break
+                        continue
                     if not (s.ok and s.fresh):
                         st.next = name
                         break
@@ -479,6 +501,8 @@ class TopicState:
         add(f"build/{t.cues_csv.name}", t.cues_csv, "en", stale_of("cues", "en"), kind="cues")
         add("build/cues-report.json", t.cues_report, "en", stale_of("cues", "en"), kind="report")
         add(f"build/subtitles/{t.id}.en.srt", t.subtitle_out("en", "srt"), "en", stale_of("subtitles", "en"), kind="subtitles")
+        add("build/composed.mp4", t.composed("en"), "en", stale_of("compose", "en"), kind="composed")
+        add(f"build/subtitles/{t.id}.en.delivery.srt", t.composed_srt("en"), "en", stale_of("compose", "en"), kind="composed_subtitles")
         add("build/draft.mp4", t.draft("en"), "en", stale_of("compose", "en"), kind="draft")
         add("out/manifest.json", t.manifest("en"), "en", stale_of("package", "en"), kind="package")
         add("translation.json", t.translation_file, "zh", kind="source")
@@ -490,6 +514,8 @@ class TopicState:
                      "exists": bool(self.pngs["zh"]), "count": len(self.pngs["zh"]), "stale": stale_of("render", "zh") if self.pngs["zh"] else None,
                      "mtime": _iso(max((fsutil.mtime(p) or 0 for p in self.pngs["zh"]), default=None)) if self.pngs["zh"] else None,
                      "hydration": None, "bytes": None})
+        add("build/composed.zh.mp4", t.composed("zh"), "zh", stale_of("compose", "zh"), kind="composed")
+        add(f"build/subtitles/{t.id}.zh.delivery.srt", t.composed_srt("zh"), "zh", stale_of("compose", "zh"), kind="composed_subtitles")
         add("build/draft.zh.mp4", t.draft("zh"), "zh", stale_of("compose", "zh"), kind="draft")
         bumpers("zh")
         add("out/manifest.zh.json", t.manifest("zh"), "zh", stale_of("package", "zh"), kind="package")

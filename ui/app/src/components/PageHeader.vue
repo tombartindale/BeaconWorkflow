@@ -15,6 +15,6 @@ defineProps<{ title: string; sub?: string; crumbs?: Array<{ label: string; to?: 
       <div class="text-h5 text-weight-medium">{{ title }}</div>
       <div v-if="sub || $slots.sub" class="text-grey-7 q-mt-xs"><slot name="sub">{{ sub }}</slot></div>
     </div>
-    <div class="col-auto row items-center q-gutter-sm"><slot /></div>
+    <div class="col-auto row items-center gap-sm"><slot /></div>
   </div>
 </template>

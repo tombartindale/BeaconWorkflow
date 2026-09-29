@@ -1,9 +1,15 @@
 """bcn package: assemble the delivery folder out/.
 
-English builds out/ afresh in a sibling temp directory and swaps it in whole, so
-a half-built package never looks complete. Mandarin adds its files beside the
-English and writes its own manifest.zh.json. A topic's intro and outro from bcn
-bumpers, if it has them, go in as separate files: the master is never changed.
+The delivered video is compose's output, not the raw editor export: slides, presenter
+and bumpers composited at the partner's delivery quality (bcn compose §). The subtitle
+file delivered beside it is compose's sidecar, its timings already shifted to match. The
+master and cues.csv are never touched by any of this; package only ever reads them.
+
+English builds out/ afresh in a sibling temp directory and swaps it in whole, so a
+half-built package never looks complete. Mandarin composes and delivers its own video
+(same presenter footage, its own slides, bumpers and subtitles) and writes its own
+manifest.zh.json beside the English one. A topic's intro and outro from bcn bumpers, if
+it has them, are also delivered as separate files, alongside the merged composed video.
 """
 
 from __future__ import annotations
@@ -14,11 +20,11 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from .. import cuesheet, fsutil, tools
+from .. import cuesheet, fsutil, srt, tools
 from ..config import Config
 from ..envelope import Diagnostic, Envelope, Fail, TopicResult, sha256_file, utcnow
 from ..markdown import parse
-from ..media import ffmpeg, probe
+from ..media import probe
 from ..progress import TopicProgress
 from ..runner import require_input, require_step, run_topics, try_skip
 from ..tree import Target, Topic
@@ -34,17 +40,20 @@ def _file_entry(p: Path) -> dict:
     return {"name": p.name, "bytes": p.stat().st_size, "sha256": sha256_file(p)}
 
 
-def _needs_transcode(info, d: dict) -> list[str]:
-    reasons = []
-    if info.vcodec != d["video_codec"]:
-        reasons.append(f"video codec {info.vcodec} ≠ {d['video_codec']}")
-    if (info.width, info.height) != (d["width"], d["height"]):
-        reasons.append(f"size {info.width}x{info.height} ≠ {d['width']}x{d['height']}")
-    if info.fps and abs(info.fps - d["fps"]) > 0.01:
-        reasons.append(f"frame rate {info.fps:g} ≠ {d['fps']}")
-    if info.acodec and info.acodec != d["audio_codec"]:
-        reasons.append(f"audio codec {info.acodec} ≠ {d['audio_codec']}")
-    return reasons
+def _deliver_subtitles(sidecar: Path, dest_srt: Path, fmt: str) -> list[Path]:
+    """Copies compose's shifted sidecar SRT into place, plus a VTT derived from the same
+    shifted cues if the delivery format calls for it. Never re-shifts anything. Each file
+    is written atomically, so this is safe whether dest_srt is in fresh staging (package_en)
+    or lands beside an already-live package (package_zh)."""
+    with fsutil.atomic_path(dest_srt) as tmp:
+        shutil.copyfile(sidecar, tmp)
+    written = [dest_srt]
+    if fmt in ("vtt", "both"):
+        cues = srt.parse_file(sidecar, sidecar.name)
+        dest_vtt = dest_srt.with_suffix(".vtt")
+        fsutil.write_text(dest_vtt, srt.to_vtt(cues))
+        written.append(dest_vtt)
+    return written
 
 
 def package_en(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: bool) -> None:
@@ -55,6 +64,11 @@ def package_en(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
     render = require_step(t, "render", "en", [src], "bcn render")
     require_step(t, "cues", "en", [src, t.srt("en"), t.video], "bcn cues")
     subs_env = require_step(t, "subtitles", "en", [t.srt("en")], "bcn subtitles")
+    compose_env = require_step(t, "compose", "en", [t.video, t.cues_csv, t.src("en")], "bcn compose")
+    compose_result = compose_env.get("results", [{}])[0]
+    if compose_result.get("mode") == "draft":
+        raise Fail("STEP_PREREQUISITE", "The last compose run was --draft; that is never delivered.",
+                   topic=t.id, lang="en", hint="Run bcn compose again without --draft.")
 
     p = parse(src, "topic.md", t.id)
     n = len(p.slides)
@@ -63,40 +77,29 @@ def package_en(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
     if not (len(pngs) == len(times) == n):
         raise Fail("PKG_COUNT_MISMATCH", f"Slide images: {len(pngs)}, cue sheet rows: {len(times)}, source slides: {n}. They must be equal.",
                    hint="Re-run render and cues against the current topic.md.")
-    fmt = cfg["subtitles"]["format"]
-    subs = [t.subtitle_out("en", "srt")] + ([t.subtitle_out("en", "vtt")] if fmt in ("vtt", "both") else [])
-    for s in subs:
-        require_input(t, s, "en", step_hint="bcn subtitles")
+    composed = t.composed("en")
+    sidecar = t.composed_srt("en")
+    require_input(t, composed, "en", step_hint="bcn compose")
+    require_input(t, sidecar, "en", step_hint="bcn compose (without --burn-subtitles)")
     bumpers = _bumpers(t, "en")
 
-    inputs = [src, t.video, t.srt("en"), t.cues_csv, *pngs, *subs, *bumpers, t.root / "programme.toml"]
+    inputs = [src, t.video, t.srt("en"), t.cues_csv, composed, sidecar, *pngs, *bumpers, t.root / "programme.toml"]
     if try_skip(t, r, "package", "en", [t.manifest("en")], inputs, force):
         return
 
-    tl = tools.require(cfg, "ffprobe", *(["ffmpeg"] if cfg["delivery"]["transcode"] else []))
-    info = probe(tl, t.video, "edit/master.mp4")
+    tl = tools.require(cfg, "ffprobe")
+    info = probe(tl, composed, "build/composed.mp4")
     staging = Path(tempfile.mkdtemp(prefix=".out.partial-", dir=t.dir))
     try:
         tp.update(5, "copying video")
-        video_out = staging / f"{t.id}.mp4"
-        transcode = None
-        d = cfg["delivery"]
-        reasons = _needs_transcode(info, d) if d["transcode"] else []
-        if reasons:
-            ffmpeg(tl, ["-i", str(t.video), "-vf", f"scale={d['width']}:{d['height']},fps={d['fps']}",
-                        "-c:v", "libx264" if d["video_codec"] == "h264" else d["video_codec"], "-b:v", d["video_bitrate"],
-                        "-pix_fmt", "yuv420p", "-c:a", d["audio_codec"], "-b:a", d["audio_bitrate"], "-movflags", "+faststart",
-                        str(video_out)], duration=info.duration, on_pct=lambda x: tp.update(5 + x * 0.8, "transcoding"))
-            transcode = {"reasons": reasons, "original_sha256": sha256_file(t.video), "transcoded_sha256": sha256_file(video_out),
-                         "spec": {k: v for k, v in d.items() if k != "transcode"}}
-            r.diagnostics.append(Diagnostic("PKG_TRANSCODED", f"Video transcoded to the delivery spec: {'; '.join(reasons)}.",
-                                            topic=t.id, lang="en", file="edit/master.mp4"))
-        else:
-            shutil.copyfile(t.video, video_out)  # copied through unmodified
+        shutil.copyfile(composed, staging / f"{t.id}.mp4")
+        tp.update(70, "copying subtitles")
+        fmt = cfg["subtitles"]["format"]
+        _deliver_subtitles(sidecar, staging / f"{t.id}.en.srt", fmt)
         tp.update(85, "copying slides")
         for i, png in enumerate(pngs, 1):
             shutil.copyfile(png, staging / t.slide_name(i, "en"))
-        for s in [*subs, *bumpers]:
+        for s in bumpers:
             shutil.copyfile(s, staging / s.name)
         shutil.copyfile(t.cues_csv, staging / t.cues_csv.name)
         (staging / f"{t.id}.md").write_text(p.stripped_file(), encoding="utf-8")
@@ -122,7 +125,8 @@ def package_en(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
             "marp_cli": render.get("results", [{}])[0].get("marp_cli"),
             "chrome": render.get("results", [{}])[0].get("chrome"),
             "subtitles_modified": subs_env.get("results", [{}])[0].get("modified", False),
-            "transcode": transcode,
+            "body_offset": compose_result.get("body_offset", 0.0),
+            "bumpers_composited": compose_result.get("bumpers", []),
             "files": [_file_entry(f) for f in en_files],
         }
         fsutil.write_json(staging / "manifest.json", manifest)
@@ -142,7 +146,7 @@ def package_en(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
     for f in [t.manifest("en")] + [t.out / e["name"] for e in manifest["files"]]:
         r.artifacts.append(Envelope.artifact_for(t.root, f, "package"))
     r.extra.update({"slides": n, "duration": round(info.duration, 3), "files": len(manifest["files"]) + 1,
-                    "transcoded": transcode is not None})
+                    "body_offset": manifest["body_offset"]})
     tp.update(100, "done")
 
 
@@ -168,23 +172,42 @@ def package_zh(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
     require_step(t, "validate", "zh", [src, t.src("en")], "bcn validate --lang zh")
     require_step(t, "render", "zh", [src], "bcn render --lang zh")
     require_step(t, "subtitles", "zh", [t.srt("zh"), t.srt("en")], "bcn subtitles --lang zh")
+    compose_env = require_step(t, "compose", "zh", [t.video, t.cues_csv, src], "bcn compose --lang zh")
+    compose_result = compose_env.get("results", [{}])[0]
+    if compose_result.get("mode") == "draft":
+        raise Fail("STEP_PREREQUISITE", "The last compose --lang zh run was --draft; that is never delivered.",
+                   topic=t.id, lang="zh", hint="Run bcn compose --lang zh again without --draft.")
     n = len(parse(src, src.name, t.id).slides)
     pngs = t.slide_pngs("zh")
     if not (len(pngs) == n == en_manifest["slide_count"]):
         raise Fail("PKG_COUNT_MISMATCH", f"Mandarin slide images: {len(pngs)}, Mandarin slides: {n}, English slides: {en_manifest['slide_count']}.")
-    fmt = cfg["subtitles"]["format"]
-    subs = [t.subtitle_out("zh", "srt")] + ([t.subtitle_out("zh", "vtt")] if fmt in ("vtt", "both") else [])
+    composed = t.composed("zh")
+    sidecar = t.composed_srt("zh")
+    require_input(t, composed, "zh", step_hint="bcn compose --lang zh")
+    require_input(t, sidecar, "zh", step_hint="bcn compose --lang zh (without --burn-subtitles)")
     bumpers = _bumpers(t, "zh")
-    inputs = [src, t.srt("zh"), *pngs, *subs, *bumpers, t.manifest("en")]
+    inputs = [src, t.srt("zh"), composed, sidecar, *pngs, *bumpers, t.manifest("en")]
     if try_skip(t, r, "package", "zh", [t.manifest("zh")], inputs, force):
         return
+
+    tl = tools.require(cfg, "ffprobe")
+    info = probe(tl, composed, "build/composed.zh.mp4")
     written = []
+    dest_video = t.out / f"{t.id}.zh.mp4"
+    with fsutil.atomic_path(dest_video) as tmp:
+        shutil.copyfile(composed, tmp)
+    written.append(dest_video)
+    # Written straight into t.out, same as the slides and bumpers below: package_zh adds
+    # beside an already-live package rather than replacing it whole (each file's own write
+    # is still atomic).
+    fmt = cfg["subtitles"]["format"]
+    written.extend(_deliver_subtitles(sidecar, t.out / f"{t.id}.zh.srt", fmt))
     for i, png in enumerate(pngs, 1):
         dest = t.out / t.slide_name(i, "zh")
         with fsutil.atomic_path(dest) as tmp:
             shutil.copyfile(png, tmp)
         written.append(dest)
-    for s in [*subs, *bumpers]:
+    for s in bumpers:
         dest = t.out / s.name
         with fsutil.atomic_path(dest) as tmp:
             shutil.copyfile(s, tmp)
@@ -192,15 +215,17 @@ def package_zh(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
     md = t.out / f"{t.id}.zh.md"
     fsutil.write_text(md, src.read_text(encoding="utf-8"))
     written.append(md)
-    shared = [e for e in en_manifest["files"] if e["name"] in (f"{t.id}.mp4", f"{t.id}.cues.csv")]
     manifest = {
         "topic_id": t.id,
         "lang": "zh",
         "slide_count": n,
-        "duration": en_manifest.get("duration"),
+        "duration": round(info.duration, 3),
         "built": utcnow(),
-        "inherits": {"from": "manifest.json", "files": shared,
-                     "note": "Mandarin reuses the English video, cue sheet and subtitle timings unchanged."},
+        "body_offset": compose_result.get("body_offset", 0.0),
+        "bumpers_composited": compose_result.get("bumpers", []),
+        # The cue sheet is shared: Mandarin has no cues step of its own (same presenter
+        # footage, same timing), so <id>.cues.csv is delivered once, by package_en.
+        "shares_cue_sheet_with": "manifest.json",
         "files": [_file_entry(f) for f in written],
     }
     fsutil.write_json(t.manifest("zh"), manifest)

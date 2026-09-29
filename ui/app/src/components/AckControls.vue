@@ -28,7 +28,7 @@ async function acknowledge() {
 
 <template>
   <template v-if="fp && d.topic">
-    <span v-if="ack" class="row items-center q-gutter-xs">
+    <span v-if="ack" class="row items-center gap-xs">
       <StateChip kind="ok" label="acknowledged" />
       <span class="text-caption text-grey-7">by {{ ack.by || '?' }} {{ fmtAgo(ack.at) }}{{ ack.note ? `: “${ack.note}”` : '' }}</span>
       <q-btn flat dense size="sm" no-caps label="Undo" @click="beacon.runJob('ack', [path], { fingerprint: fp!, clear: true })" />

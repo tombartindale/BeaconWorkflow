@@ -147,7 +147,7 @@ onBeforeUnmount(() => {
           </button>
         </template>
       </div>
-      <div class="row items-center q-gutter-sm">
+      <div class="row items-center gap-sm">
         <q-btn-toggle v-model="source" dense no-caps unelevated size="sm" toggle-color="primary" :options="sources" />
         <span class="text-caption text-grey-7">Subtitles</span>
         <q-btn-toggle v-model="subs" dense no-caps unelevated size="sm" toggle-color="primary"

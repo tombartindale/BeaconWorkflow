@@ -32,6 +32,7 @@ Run the tests with `cd tooling && .venv/bin/python -m pytest` (bcn) and `cd ui &
 ```
 bcn validate|render|script|bumpers|cues|subtitles|compose|package|qa|status <path> [--lang en|zh] [--human] [--quiet] [--force] [--theme NAME] [--jobs N]
 bcn show|diagnostics|review|intake|translation <path> ...   # used by the UI; see --help
+bcn qti <unit|module|activity.md> [--force]                  # unit quizzes as QTI 2.1 packages for an LMS
 bcn schema <tool> | bcn codes | bcn doctor
 ```
 
@@ -118,11 +119,31 @@ For a separate teleprompter app we suggest [QPrompt](https://qprompt.app/), whic
 `bcn bumpers <topic|unit|module> [--lang zh]`, **Intro/outro** on a topic page, or **bumpers** in a module's bulk actions, makes each topic's title card and turns it into two videos:
 
 - `build/bumpers/<id>.card.<lang>.png`: the topic title from that language's front matter, under the logo, at the theme's slide resolution. A long title wraps and shrinks to fit.
-- `build/bumpers/<id>.intro.<lang>.mp4` and `<id>.outro.<lang>.mp4`: the card faded from and to black, with a silent stereo track, at the size and frame rate in `[delivery]`.
+- `build/bumpers/<id>.intro.<lang>.mp4` and `<id>.outro.<lang>.mp4`: the cards, with a silent stereo track. The intro starts on its first frame and fades out to black; the outro fades in from black and out again. Both are at the size and frame rate in `[delivery]`.
 
 The look is part of the theme, under `[bumper]` in `theme.toml`: logo file, colours, durations and fade. The logo sits in the theme directory. Until one is set, every run warns `BUMPER_NO_LOGO`.
 
 Once a topic has bumpers, `compose` wraps the draft in them in place of the programme-wide `[bumpers]` files, and `package` delivers them as separate files beside the master. Neither the master nor the cue sheet is changed. If the title changes, the bumpers go stale: compose skips them, and package refuses to run until `bcn bumpers` is run again.
+
+### Quizzes for the LMS
+
+`bcn qti <unit|module|programme>` exports every unit quiz as a QTI 2.1 package: `<module>/build/qti/<module>-<unit>-quiz.zip`, ready for the LMS's QTI import. A quiz is a unit's `activity.md` with `type: quiz` in its front matter, written the way the content producer writes it:
+
+```markdown
+## Question 1
+
+The question, over as many lines or paragraphs as it needs.
+
+- (a) An option → Feedback shown when this option is chosen.
+- (b) The right answer ✔ → Correct. Why it is right.
+```
+
+- **Options:** ✔ (or ✓) marks a correct option, and → (or `->`) starts its feedback. One correct option makes a single-choice question; several make a "choose all that apply" question, scored all or nothing.
+- **In the package:** options stay in the order written, because feedback may refer to them by letter. Each question scores 1 point. Bold and italic come through.
+- **Errors block the export:** a question with no correct answer or fewer than two options gets no package, and an older package for that unit is removed. Missing feedback is only a warning.
+- **`bcn validate`** reports the same problems, so they show in Diagnostics before anyone exports.
+
+The packages validate against the IMS QTI 2.1 and Content Packaging schemas. Try a first import into the target LMS before relying on it, since each LMS handles feedback slightly differently.
 
 ### Overriding a check
 

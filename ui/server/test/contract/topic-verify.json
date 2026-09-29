@@ -623,36 +623,42 @@
        "errors": 0,
        "exists": true,
        "path": "KV7015/course-map.md",
+       "quiz": null,
        "warnings": 0
       },
       {
        "errors": 0,
        "exists": true,
        "path": "KV7015/assets.md",
+       "quiz": null,
        "warnings": 0
       },
       {
        "errors": 0,
        "exists": true,
        "path": "KV7015/reading-list.md",
+       "quiz": null,
        "warnings": 0
       },
       {
        "errors": 0,
        "exists": true,
        "path": "KV7015/assignment-1.md",
+       "quiz": null,
        "warnings": 0
       },
       {
        "errors": 0,
        "exists": true,
        "path": "KV7015/U01/activity.md",
+       "quiz": null,
        "warnings": 0
       },
       {
        "errors": 0,
        "exists": false,
        "path": "KV7015/U02/activity.md",
+       "quiz": null,
        "warnings": 0
       }
      ],

@@ -8,11 +8,6 @@ import StateChip from '@/components/StateChip.vue';
 import { fmtAgo, plural, STAGE_LABEL } from '@/format';
 import { useBeacon } from '@/stores/beacon';
 
-// A neutral ramp: later stages darker. Colour is kept for stale and blocked elsewhere.
-const RAMP = {
-  en: ['#d9d5cc', '#c3cbd2', '#a6b4c0', '#8799a9', '#6a8093', '#4d677d', '#2f4b62'],
-  zh: ['#d9d5cc', '#c3cbd2', '#a6b4c0', '#7c91a3', '#557087', '#2f4b62'],
-};
 const LANGS = ['en', 'zh'] as const;
 const beacon = useBeacon();
 
@@ -49,12 +44,30 @@ const syncLine = computed(() => {
     conflicts: (pull.plan || []).filter((p) => p.action === 'conflict').length };
 });
 
-const segments = (counts: Record<string, number>, lang: 'en' | 'zh', total: number) => stages.value[lang]
-  .map((st, i) => ({ st, n: counts[st] || 0, colour: RAMP[lang][i] }))
-  .filter((x) => x.n)
-  .map((x) => ({ ...x, width: `${(100 * x.n) / total}%` }));
-const ariaBar = (counts: Record<string, number>, lang: 'en' | 'zh') =>
-  stages.value[lang].map((st) => `${STAGE_LABEL[st]} ${counts[st] || 0}`).join(', ');
+// The stage ladder: one column per pipeline step, English on top, Mandarin below. Mandarin
+// can only be sent for translation once the English subtitles are done, so its row starts
+// after English "Cued", under English "Packaged", which runs alongside the translation.
+// Each cell shows how many of the module's topics have reached at least that stage.
+const BRANCH_AFTER = 'cued';
+const ladder = computed(() => {
+  const en = stages.value.en.filter((st) => st !== 'planned');
+  const zh = stages.value.zh.filter((st) => st !== 'not_sent');
+  const branch = en.indexOf(BRANCH_AFTER) + 1;           // column (0-based) where Mandarin starts
+  const columns = Math.max(en.length, branch + zh.length);
+  return { en, zh, branch, columns };
+});
+// Topics at this stage or any later one. Stage lists are in pipeline order.
+const reached = (counts: Record<string, number>, lang: 'en' | 'zh', st: string) => {
+  const all = stages.value[lang];
+  return all.slice(all.indexOf(st)).reduce((n, s2) => n + (counts[s2] || 0), 0);
+};
+const cells = (m: { topics: number; en: Record<string, number>; zh: Record<string, number> }, lang: 'en' | 'zh') =>
+  ladder.value[lang].map((st, i) => {
+    const n = reached(m[lang], lang, st);
+    return { st, n, pct: m.topics ? (100 * n) / m.topics : 0,
+      col: (lang === 'en' ? i : ladder.value.branch + i) + 2 };  // +2: grid column 1 is the language label
+  });
+const gridStyle = computed(() => ({ gridTemplateColumns: `28px repeat(${ladder.value.columns}, minmax(56px, 1fr)) 96px` }));
 </script>
 
 <template>
@@ -64,7 +77,7 @@ const ariaBar = (counts: Record<string, number>, lang: 'en' | 'zh') =>
       <PageHeader title="Programme" :sub="`${s.topics} topics across ${modules.length} modules`" />
 
       <q-card v-if="syncLine" flat bordered class="q-mb-md cursor-pointer" @click="$router.push('/sync')">
-        <q-card-section class="row items-center q-gutter-sm q-py-sm">
+        <q-card-section class="row items-center gap-sm q-py-sm">
           <q-icon name="cloud" size="sm" color="primary" />
           <strong>OneDrive</strong>
           <span class="text-grey-7">{{ syncLine.last ? `last pulled ${fmtAgo(syncLine.last, beacon.now)}` : 'never pulled' }}</span>
@@ -91,24 +104,43 @@ const ariaBar = (counts: Record<string, number>, lang: 'en' | 'zh') =>
 
       <q-card flat bordered>
         <q-list separator>
+          <!-- Column headings: laid out exactly like a module row, so the columns line up. -->
+          <q-item dense class="q-pt-sm">
+            <q-item-section class="prog-name"></q-item-section>
+            <q-item-section>
+              <div class="ladder" :style="gridStyle">
+                <span v-for="(st, i) in ladder.en" :key="'en-' + st" class="ladder-h" :style="{ gridRow: 1, gridColumn: i + 2 }">{{ STAGE_LABEL[st] }}</span>
+                <span v-for="(st, i) in ladder.zh" :key="'zh-' + st" class="ladder-h zh" :style="{ gridRow: 2, gridColumn: ladder.branch + i + 2 }">{{ STAGE_LABEL[st] }}</span>
+              </div>
+            </q-item-section>
+            <q-item-section side class="prog-flags"></q-item-section>
+          </q-item>
           <q-item v-for="[name, m] in modules" :key="name" clickable :to="`/module/${name}`" class="q-py-md">
-            <q-item-section style="max-width: 260px">
+            <q-item-section class="prog-name">
               <q-item-label class="text-weight-bold">{{ name }}</q-item-label>
               <q-item-label caption>{{ m.title }}</q-item-label>
               <q-item-label caption>{{ m.topics }} topics · {{ m.units.length }} units</q-item-label>
             </q-item-section>
             <q-item-section>
-              <div v-for="lang in LANGS" :key="lang" class="row items-center no-wrap q-gutter-sm q-my-xs">
-                <span class="text-caption text-weight-bold" style="width: 22px">{{ lang.toUpperCase() }}</span>
-                <div class="stackbar" role="img" :aria-label="ariaBar(m[lang], lang)">
-                  <span v-for="x in segments(m[lang], lang, m.topics)" :key="x.st" :style="{ width: x.width, background: x.colour }">
-                    <q-tooltip>{{ STAGE_LABEL[x.st] }}: {{ x.n }}</q-tooltip>
+              <div class="ladder" :style="gridStyle">
+                <template v-for="lang in LANGS" :key="lang">
+                  <span class="ladder-lang" :style="{ gridRow: lang === 'en' ? 1 : 2 }">{{ lang.toUpperCase() }}</span>
+                  <span v-if="lang === 'zh'" class="ladder-branch" :style="{ gridRow: 2, gridColumn: ladder.branch + 1 }">
+                    ↳ after subtitles
                   </span>
-                </div>
-                <span class="text-caption text-grey-7" style="width: 90px">{{ m.complete[lang] }}/{{ m.topics }} complete</span>
+                  <div v-for="c in cells(m, lang)" :key="c.st" :class="['ladder-cell', lang, { done: c.n === m.topics && c.n > 0 }]"
+                    :style="{ gridRow: lang === 'en' ? 1 : 2, gridColumn: c.col }">
+                    <span class="fill" :style="{ width: `${c.pct}%` }"></span>
+                    <span class="n">{{ c.n }}</span>
+                    <q-tooltip>{{ lang === 'en' ? 'English' : 'Mandarin' }} · {{ STAGE_LABEL[c.st] }}: {{ c.n }} of {{ m.topics }} topics have got this far</q-tooltip>
+                  </div>
+                  <span class="ladder-done text-caption text-grey-7" :style="{ gridRow: lang === 'en' ? 1 : 2, gridColumn: ladder.columns + 2 }">
+                    {{ m.complete[lang] }}/{{ m.topics }} complete
+                  </span>
+                </template>
               </div>
             </q-item-section>
-            <q-item-section side class="row q-gutter-xs" style="flex-direction: row; max-width: 360px; flex-wrap: wrap; justify-content: flex-end">
+            <q-item-section side class="prog-flags row items-center gap-xs" style="flex-direction: row; flex-wrap: wrap; justify-content: flex-end; align-content: center">
               <StateChip v-if="m.blocked" kind="blocked" :label="`${m.blocked} blocked`" />
               <StateChip v-if="m.stale" kind="stale" :label="`${m.stale} stale`" />
               <StateChip v-if="m.cloud" kind="cloud" :label="`☁ ${m.cloud} cloud-only`" />
@@ -118,11 +150,9 @@ const ariaBar = (counts: Record<string, number>, lang: 'en' | 'zh') =>
           </q-item>
           <q-item v-if="!modules.length"><q-item-section class="text-grey-7">No modules found.</q-item-section></q-item>
         </q-list>
-        <q-card-section class="q-gutter-y-xs">
-          <div v-for="lang in LANGS" :key="lang" class="row q-gutter-md text-caption text-grey-7 legend">
-            <strong>{{ lang.toUpperCase() }}</strong>
-            <span v-for="(st, i) in stages[lang]" :key="st"><i :style="{ background: RAMP[lang][i] }"></i>{{ STAGE_LABEL[st] }}</span>
-          </div>
+        <q-card-section class="text-caption text-grey-7">
+          Each cell counts the topics that have reached at least that stage. Mandarin starts once the English
+          subtitles are done, when a topic can be sent for translation.
         </q-card-section>
       </q-card>
     </template>

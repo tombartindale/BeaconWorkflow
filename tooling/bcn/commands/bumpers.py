@@ -1,11 +1,11 @@
-"""bcn bumpers: the intro and outro for a topic, each a still card faded in and out.
+"""bcn bumpers: the intro and outro for a topic, each a still card with fades.
 
 The intro is the module code above the topic's title (from the front matter of
 topic.md or topic.zh.md), laid over the theme's background video (or on its background colour if it names
 none). The outro is the logo the theme names, on its own. Cards are rendered to PNG
 with the pinned Chrome; ffmpeg holds each for the durations in the theme's [bumper]
-table, fading from and to black, with a silent stereo track so it joins cleanly to
-the edit. Size and frame rate follow [delivery] in programme.toml,
+table with a silent stereo track so it joins cleanly to the edit. The intro starts
+on its first frame and fades to black; the outro fades from and to black. Size and frame rate follow [delivery] in programme.toml,
 so the bumpers match the master.
 
 Outputs, in build/bumpers/: <id>.intro-card.<lang>.png, <id>.outro-card.<lang>.png,
@@ -96,9 +96,11 @@ def outro_card_html(theme: Theme, lang: str) -> str:
     return _page(theme, lang, logo, css)
 
 
-def _video_args(d: dict, seconds: float, fade: float, background: str, still: str, video: Path | None = None) -> list[str]:
+def _video_args(d: dict, seconds: float, fade: float, background: str, still: str, video: Path | None = None,
+                fade_in: bool = True) -> list[str]:
     W, H, fps = d["width"], d["height"], d["fps"]
-    fades = f"fade=t=in:st=0:d={fade:.3f},fade=t=out:st={seconds - fade:.3f}:d={fade:.3f},format=yuv420p"
+    fades = (f"fade=t=in:st=0:d={fade:.3f}," if fade_in else "") + \
+        f"fade=t=out:st={seconds - fade:.3f}:d={fade:.3f},format=yuv420p"
     if video:
         # The card (transparent PNG) over the background video, which is scaled to fill the
         # frame, loops if it is shorter than the bumper, and brings no sound of its own.
@@ -167,7 +169,7 @@ def bumpers_topic(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, lang
         for i, (kind, seconds) in enumerate((("intro", b["intro_seconds"]), ("outro", b["outro_seconds"]))):
             tp.update(20 + 40 * i, f"encoding {kind}")
             ffmpeg(tl, [*_video_args(d, seconds, b["fade_seconds"], b["background"], f"{kind}-card.png",
-                                     video if kind == "intro" else None), f"{kind}.mp4"],
+                                     video if kind == "intro" else None, fade_in=kind != "intro"), f"{kind}.mp4"],
                    duration=seconds, on_pct=lambda pct, i=i, kind=kind: tp.update(20 + 40 * i + pct * 0.4, f"encoding {kind}"), cwd=str(work))
         for name, dest in (("intro-card.png", intro_card), ("outro-card.png", outro_card), ("intro.mp4", intro), ("outro.mp4", outro)):
             with fsutil.atomic_path(dest) as tmp:

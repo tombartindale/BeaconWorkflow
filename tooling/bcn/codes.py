@@ -95,6 +95,12 @@ CODES: dict[str, tuple[str, str]] = {
     "BUMPER_NO_TITLE": ("error", "The topic's front matter has no title to put on the title card."),
     "BUMPER_NO_LOGO": ("warn", "The theme names no logo, so the outro card is blank."),
     "BUMPER_TITLE_FIT": ("warn", "The title does not fit the title card even at the smallest size."),
+    # --- quizzes (qti, and validate on a quiz activity.md) -------------
+    "QUIZ_NO_QUESTIONS": ("error", "A quiz has no ## question sections."),
+    "QUIZ_FORMAT": ("error", "A quiz question is malformed: no text, too few options, or a repeated option letter."),
+    "QUIZ_NO_CORRECT": ("error", "A quiz question has no option marked correct with ✔."),
+    "QUIZ_NO_FEEDBACK": ("warn", "A quiz option has no → feedback."),
+    "QUIZ_NOT_A_QUIZ": ("info", "The activity is not a quiz, so there is nothing to export."),
     # --- compose ---------------------------------------------------------
     "COMPOSE_BUMPER": ("warn", "A bumper is configured but could not be used."),
     # --- package ---------------------------------------------------------

@@ -85,7 +85,7 @@ watch(() => [...open].map((id) => beacon.jobs.get(id)?.state), () => {
       <q-card-section class="text-subtitle1 text-weight-medium q-pb-sm">{{ sec.title }}</q-card-section>
       <q-list separator>
         <q-item v-for="v in sec.rows" :key="v.j.id" class="column items-stretch">
-          <div class="row items-center q-gutter-sm">
+          <div class="row items-center gap-sm">
             <StateChip :kind="v.st" />
             <span class="text-weight-medium">{{ v.j.label }}</span>
             <span class="text-caption text-grey-7">{{ v.meta }}</span>
@@ -95,12 +95,12 @@ watch(() => [...open].map((id) => beacon.jobs.get(id)?.state), () => {
             <q-btn flat dense size="sm" no-caps :icon="open.has(v.j.id) ? 'expand_less' : 'expand_more'" :label="open.has(v.j.id) ? 'Hide' : 'Details'" @click="toggle(v.j.id)" />
           </div>
           <div v-if="v.live && v.j.state !== 'queued'" class="q-mt-sm q-gutter-y-xs">
-            <div class="row items-center q-gutter-sm no-wrap">
+            <div class="row items-center gap-sm no-wrap">
               <span class="text-caption" style="width: 40px">Run</span>
               <q-linear-progress :value="v.runPct / 100" size="10px" rounded class="col" />
               <span class="text-caption" style="width: 40px">{{ v.runPct.toFixed(0) }}%</span>
             </div>
-            <div class="row items-center q-gutter-sm no-wrap">
+            <div class="row items-center gap-sm no-wrap">
               <span class="text-caption" style="width: 40px">Topic</span>
               <q-linear-progress :value="(v.p.topic_pct || 0) / 100" size="10px" rounded color="secondary" class="col" />
               <span class="text-caption" style="width: 40px">{{ v.p.topic_pct !== null && v.p.topic_pct !== undefined ? `${Math.round(v.p.topic_pct)}%` : '' }}</span>

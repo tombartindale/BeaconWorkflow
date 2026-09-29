@@ -146,6 +146,14 @@ class Topic:
     def draft(self, lang: str = "en") -> Path:
         return self.build / ("draft.mp4" if lang == "en" else f"draft.{lang}.mp4")
 
+    def composed(self, lang: str = "en") -> Path:
+        """The full-quality composed video (slides, presenter, bumpers): what package delivers."""
+        return self.build / ("composed.mp4" if lang == "en" else f"composed.{lang}.mp4")
+
+    def composed_srt(self, lang: str = "en") -> Path:
+        """The delivered subtitle file: master.srt shifted by the intro's duration, never burned in."""
+        return self.build / "subtitles" / f"{self.id}.{lang}.delivery.srt"
+
     def bumper_card(self, kind: str, lang: str = "en") -> Path:
         """The still behind a bumper: 'intro' is the topic title, 'outro' the logo."""
         return self.build / "bumpers" / f"{self.id}.{kind}-card.{lang}.png"

@@ -8,6 +8,7 @@ import { NEXT_LABEL, STAGE_LABEL } from '@/format';
 import { TOPIC } from './context';
 
 const layout = defineModel<'side' | 'stacked'>('layout', { required: true });
+const lang = defineModel<'en' | 'zh'>('lang', { required: true });
 const t = inject(TOPIC)!;
 const st = computed(() => t.status.value);
 const title = computed(() => st.value?.title || (t.show.value?.en?.front?.title as string | undefined) || '');
@@ -19,8 +20,8 @@ const blockers = computed(() => (st.value ? [...st.value.en.blockers.map((b) => 
   <PageHeader :title="`${t.id} · ${title}`"
     :crumbs="[{ label: 'Programme', to: '/' }, { label: t.id.slice(0, 6), to: `/module/${t.id.slice(0, 6)}` }, { label: t.id.slice(7, 10) }]">
     <template #sub>
-      <div v-if="st" class="row items-center q-gutter-md">
-        <span v-for="[lang, s] in langs" :key="lang" class="row items-center q-gutter-xs">
+      <div v-if="st" class="row items-center gap-md">
+        <span v-for="[lang, s] in langs" :key="lang" class="row items-center gap-xs">
           <strong class="text-caption">{{ lang.toUpperCase() }}</strong>
           <StagePips :index="s.stage_index" :total="s.stages.length" size="lg" />
           <span>{{ STAGE_LABEL[s.stage] }}</span>
@@ -42,7 +43,12 @@ const blockers = computed(() => (st.value ? [...st.value.en.blockers.map((b) => 
         </q-item>
       </q-list>
     </template>
-    <span class="text-caption text-grey-7">Layout</span>
+    <span class="text-caption text-grey-7">Language</span>
+    <q-btn-toggle v-model="lang" dense no-caps unelevated toggle-color="primary"
+      :options="[{ label: 'English', value: 'en' }, { label: 'Mandarin', value: 'zh' }]">
+      <q-tooltip>Which language the action buttons work on.</q-tooltip>
+    </q-btn-toggle>
+    <span class="text-caption text-grey-7 q-ml-md">Layout</span>
     <q-btn-toggle v-model="layout" dense no-caps unelevated toggle-color="primary"
       :options="[{ label: 'Side by side', value: 'side' }, { label: 'Stacked', value: 'stacked' }]" />
   </PageHeader>

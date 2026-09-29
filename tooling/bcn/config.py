@@ -77,7 +77,9 @@ DEFAULTS: dict[str, Any] = {
     },
     "delivery": {
         # Placeholder: the partner's delivery specification is unconfirmed.
-        "transcode": False,
+        # What bcn compose encodes to in full (non-draft) mode: the delivered video is
+        # always built to this spec from scratch, so there is no separate "transcode if
+        # it doesn't match" step any more.
         "video_codec": "h264",
         "audio_codec": "aac",
         "width": 1920,
@@ -89,16 +91,20 @@ DEFAULTS: dict[str, Any] = {
     "compose": {
         # Placeholder: the partner's composite layout is not agreed.
         "layout": "inset",  # "inset" or "side_by_side"
-        "width": 960,
-        "height": 540,
-        "fps": 25,
         "inset_scale": 0.3,
         "inset_position": "top-right",  # top-left, top-right, bottom-left, bottom-right; bottom sits over subtitles
         "inset_margin": 16,
-        "watermark": "DRAFT",
-        "subtitle_font_size": 16,  # libass units at the default 288-line script resolution
-        "crf": 30,
-        "preset": "veryfast",
+        "subtitle_font_size": 16,  # libass units at the default 288-line script resolution; --burn-subtitles only
+        # Full mode (the default) delivers, so it encodes at [delivery]'s own resolution/fps/codec/
+        # bitrate and subtitles go out as a shifted sidecar file, never burned in. --draft is for
+        # quickly checking cue timing only: it is never delivered, so it keeps its own small, fast,
+        # watermarked settings below, independent of [delivery].
+        "draft_width": 960,
+        "draft_height": 540,
+        "draft_fps": 25,
+        "draft_watermark": "DRAFT",
+        "draft_crf": 30,
+        "draft_preset": "veryfast",
     },
     "bumpers": {"intro": "", "outro": ""},
     "sync": {
@@ -291,8 +297,10 @@ def load_theme(root: Path, name: str) -> Theme:
             raise Fail("RENDER_THEME", f"The bumper {key.replace('_', ' ')} {rel} named in theme.toml does not exist "
                        f"(looked for {theme.asset(rel)}).", file=str(d / "theme.toml"))
     b = theme.bumper
-    if min(b["intro_seconds"], b["outro_seconds"]) < 2 * b["fade_seconds"]:
-        raise Fail("RENDER_THEME", "Each bumper must last at least twice fade_seconds, so the fades do not overlap.",
+    # The intro only fades out; the outro fades in and out, so its fades must not overlap.
+    if b["intro_seconds"] < b["fade_seconds"] or b["outro_seconds"] < 2 * b["fade_seconds"]:
+        raise Fail("RENDER_THEME", "The intro must last at least fade_seconds, and the outro at least twice fade_seconds, "
+                   "so the fades do not overlap.",
                    file=str(d / "theme.toml"))
     for lang in ("en", "zh"):
         if lang not in theme.fonts:

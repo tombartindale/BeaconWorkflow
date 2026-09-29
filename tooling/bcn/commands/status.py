@@ -19,9 +19,11 @@ from .. import fsutil, srt, tools
 from ..config import Theme, load_theme, resolve_theme_name
 from ..envelope import Diagnostic, Envelope, Fail, TopicResult, sha256_file
 from ..markdown import parse
+from ..quiz import parse_quiz
 from ..media import probe
 from ..state import STAGES, TopicState, all_topics, module_context
 from ..tree import Target, Topic
+from .qti import package_path
 from .validate import module_documents
 
 HELP = "current state of every topic beneath the path"
@@ -195,7 +197,8 @@ def run(args: argparse.Namespace, env: Envelope, target: Target) -> None:
             mine = [d for d in diags if d.file == f"{m}/{rel}"]
             documents.append({"path": f"{m}/{rel}", "exists": (mdir / rel).is_file(),
                               "errors": sum(1 for d in mine if d.level == "error"),
-                              "warnings": sum(1 for d in mine if d.level == "warn")})
+                              "warnings": sum(1 for d in mine if d.level == "warn"),
+                              "quiz": _quiz(target.root, m, rel)})
         module_docs[m] = {
             "course_map": ctx.course_map.path.is_file(),
             "documents": documents,
@@ -208,6 +211,20 @@ def run(args: argparse.Namespace, env: Envelope, target: Target) -> None:
         if m in env.extra["summary"]["modules"]:
             env.extra["summary"]["modules"][m].update(info)
     env.extra["verified"] = bool(args.verify)
+
+
+def _quiz(root: Path, module: str, rel: str) -> dict[str, Any] | None:
+    """For a unit activity that is a quiz: its question count and its QTI package (bcn qti), if made."""
+    src = root / module / rel
+    if not rel.endswith("/activity.md") or not src.is_file():
+        return None
+    quiz = parse_quiz(src, f"{module}/{rel}")
+    if quiz.front.get("type") != "quiz":
+        return None
+    pkg = package_path(root, module, rel.split("/")[0])
+    exists = pkg.is_file()
+    return {"questions": len(quiz.questions), "package": str(pkg.relative_to(root)), "exists": exists,
+            "stale": (not fsutil.is_fresh([pkg], [src])) if exists else None}
 
 
 def _module_title(p: Path) -> str | None:

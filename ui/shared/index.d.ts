@@ -44,7 +44,9 @@ export type TopicStatus = Omit<GenTopic, 'en' | 'zh' | 'artifacts' | 'outcomes'>
   has_dir: boolean; hydration: StatusArtifact['hydration']; unreviewed_mistranscriptions: number;
   en: LangState; zh: LangState; artifacts: StatusArtifact[];
 };
-export interface ModuleDocument { path: string; exists: boolean; errors: number; warnings: number }
+/** A unit quiz (activity.md with type: quiz) and its QTI package from bcn qti. */
+export interface QuizInfo { questions: number; package: string; exists: boolean; stale: boolean | null }
+export interface ModuleDocument { path: string; exists: boolean; errors: number; warnings: number; quiz: QuizInfo | null }
 export interface ModuleSummary {
   topics: number; units: string[]; en: Record<string, number>; zh: Record<string, number>; complete: Record<Lang, number>;
   blocked: number; stale: number; cloud: number; diagnostics: Record<Level, number>; unreviewed: number;

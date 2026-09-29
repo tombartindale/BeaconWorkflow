@@ -267,4 +267,7 @@ def validate_activity(path: Path, rel: str, required: list[str], outcomes: dict[
         if types and "type" in fm and fm["type"][0] not in types:
             diags.append(Diagnostic("DOC_ID_FORMAT", f"{rel} has type: {fm['type'][0]}; expected one of {', '.join(types)}.",
                                     file=rel, line=fm["type"][1]))
+        if fm.get("type", ("",))[0] == "quiz":
+            from .quiz import parse_quiz  # the same parser bcn qti exports with
+            diags.extend(parse_quiz(path, rel).diagnostics)
     return diags

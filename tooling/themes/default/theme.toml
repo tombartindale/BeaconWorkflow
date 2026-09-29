@@ -65,7 +65,7 @@ weight = 700
 # weight = 900
 
 [bumper]
-# The intro and outro for each topic (bcn bumpers), faded in and out. The intro is the topic
+# The intro and outro for each topic (bcn bumpers). The intro cuts in and fades out; the outro fades in and out. The intro is the topic
 # title over the background video; the outro is the logo alone. Paths are relative to this
 # directory: ../../../assets/ is the assets folder at the top of the project. Size and frame
 # rate come from [delivery] in programme.toml.
@@ -77,4 +77,4 @@ background = "#000000"   # the outro (dark, for the white logo); also the intro 
 color = "#ffffff"        # intro title, over the background video
 intro_seconds = 5.0
 outro_seconds = 5.0
-fade_seconds = 0.75      # from and to black, at each end
+fade_seconds = 0.75      # the intro fades out to black; the outro fades in and out

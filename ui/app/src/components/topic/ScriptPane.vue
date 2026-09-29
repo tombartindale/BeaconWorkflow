@@ -15,14 +15,14 @@ const scriptFiles = computed(() => (t.status.value?.artifacts || []).filter((a) 
 
 <template>
   <q-card flat bordered>
-    <q-card-section class="row items-center q-gutter-sm q-pb-sm">
+    <q-card-section class="row items-center gap-sm q-pb-sm">
       <div class="text-subtitle1 text-weight-medium">Script</div>
       <q-btn flat dense size="sm" no-caps icon="edit" label="Edit" :to="`/edit/${t.id}?lang=${lang}`" />
       <q-space />
       <q-btn-toggle v-if="t.show.value?.zh" v-model="lang" dense no-caps unelevated size="sm" toggle-color="primary"
         :options="[{ label: 'EN', value: 'en' }, { label: 'ZH', value: 'zh' }]" />
     </q-card-section>
-    <q-card-section v-if="scriptFiles.length" class="row items-center q-gutter-sm q-py-none text-caption">
+    <q-card-section v-if="scriptFiles.length" class="row items-center gap-sm q-py-none text-caption">
       <span>Recording script:</span>
       <a v-for="a in scriptFiles" :key="a.path" :href="fileUrl(a.path, t.stamp(a.path))" target="_blank"
         :download="a.path.endsWith('.pdf') ? undefined : a.path.split('/').pop()">{{ LABEL[a.path.split('.').pop()!] }}</a>
@@ -30,7 +30,7 @@ const scriptFiles = computed(() => (t.status.value?.artifacts || []).filter((a) 
     </q-card-section>
     <q-card-section v-if="!s" class="text-grey-7">{{ lang === 'en' ? 'No topic.md yet. Paste it in Intake.' : 'No topic.zh.md yet.' }}</q-card-section>
     <template v-else>
-      <q-card-section v-if="lang === 'en'" class="row items-center q-gutter-sm q-py-sm">
+      <q-card-section v-if="lang === 'en'" class="row items-center gap-sm q-py-sm">
         <span><strong>{{ s.words }}</strong> words</span>
         <span class="text-grey-7">target {{ s.target_words }} ({{ s.range[0] }}–{{ s.range[1] }}) at {{ s.words_per_minute }} wpm</span>
         <StateChip v-if="s.words_ok === false" kind="error" label="outside tolerance" />

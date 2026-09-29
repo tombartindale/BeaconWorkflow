@@ -35,7 +35,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
 <template>
   <q-dialog :model-value="true" maximized @hide="close">
     <q-card class="column no-wrap bg-black text-white">
-      <q-card-section class="col row items-center justify-center q-gutter-md" style="min-height: 0" @click.self="close">
+      <q-card-section class="col row items-center justify-center gap-md" style="min-height: 0" @click.self="close">
         <figure v-for="f in frames" :key="f.lang" class="lightbox-frame q-ma-none" :style="{ width: frames.length > 1 ? '48%' : '80%' }">
           <img :src="f.url" :alt="`${f.lang} slide ${i + 1}`">
           <div v-if="safeArea" class="safe-area" :style="{ height: `${pct}%` }"><span>subtitle safe area · {{ render.theme?.safe_bottom }}px</span></div>

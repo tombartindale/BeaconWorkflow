@@ -19,7 +19,7 @@ const loc = computed(() => [props.showCode === false ? null : props.d.code, prop
       <q-item-label><slot name="message">{{ d.message }}</slot></q-item-label>
       <q-item-label v-if="loc" caption class="text-mono">{{ loc }}</q-item-label>
       <q-item-label v-if="d.hint" caption class="text-italic">{{ d.hint }}</q-item-label>
-      <div v-if="$slots.default" class="row items-center q-gutter-sm q-mt-xs"><slot /></div>
+      <div v-if="$slots.default" class="row items-center gap-sm q-mt-xs"><slot /></div>
     </q-item-section>
   </q-item>
 </template>

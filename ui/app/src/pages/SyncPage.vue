@@ -103,7 +103,7 @@ const chip = (a: string) => (a === 'conflict' ? 'blocked' : a === 'copy' ? 'ok' 
         <q-list separator>
           <q-item v-for="p in conflicts" :key="p.local">
             <q-item-section><q-item-label class="text-mono">{{ p.local }}</q-item-label><q-item-label caption class="text-mono">{{ p.remote }}</q-item-label></q-item-section>
-            <q-item-section side class="row q-gutter-sm" style="flex-direction: row">
+            <q-item-section side class="row items-center gap-sm" style="flex-direction: row">
               <q-btn outline dense size="sm" no-caps label="Keep OneDrive version" :disable="busy" @click="keep(p, 'remote')" />
               <q-btn outline dense size="sm" no-caps label="Keep local version" :disable="busy" @click="keep(p, 'local')" />
             </q-item-section>
@@ -123,7 +123,7 @@ const chip = (a: string) => (a === 'conflict' ? 'blocked' : a === 'copy' ? 'ok' 
               <p v-if="s.notConfigured.hint" class="text-grey-7">{{ s.notConfigured.hint }}</p>
             </q-card-section>
             <template v-else>
-              <q-card-section class="row items-center q-gutter-sm q-pt-none">
+              <q-card-section class="row items-center gap-sm q-pt-none">
                 <span><strong>{{ s.copies.length }}</strong> to copy · {{ s.env.counts?.in_sync || 0 }} in sync</span>
                 <StateChip v-if="s.conflicts.length" kind="blocked" :label="plural(s.conflicts.length, 'conflict')" />
                 <StateChip v-if="s.oneSide.length" :label="`${s.oneSide.length} on one side only`" />

@@ -91,7 +91,7 @@ function correct(d: Diagnostic) {
       <q-tab name="mistranscriptions" :label="`Mis-transcriptions${mtOpen ? ` (${mtOpen})` : ''}`" />
     </q-tabs>
     <q-card flat bordered class="q-mb-md">
-      <q-card-section class="row items-center q-gutter-sm">
+      <q-card-section class="row items-center gap-sm">
         <q-select v-if="tab === 'codes'" v-model="f.level" dense outlined emit-value map-options style="min-width: 190px" aria-label="Level"
           :options="[{ label: 'errors', value: 'error' }, { label: 'errors and warnings', value: 'warn' }, { label: 'everything', value: 'info' }]" />
         <q-select v-model="f.module" dense outlined emit-value map-options :options="moduleOptions" style="min-width: 150px" aria-label="Module" />
@@ -112,7 +112,7 @@ function correct(d: Diagnostic) {
           <template #header>
             <q-item-section avatar><q-badge color="grey-7" :label="g.items.length" /></q-item-section>
             <q-item-section>
-              <q-item-label class="row items-center q-gutter-sm"><StateChip :kind="g.items[0].level" /><code>{{ g.code }}</code></q-item-label>
+              <q-item-label class="row items-center gap-sm"><StateChip :kind="g.items[0].level" /><code>{{ g.code }}</code></q-item-label>
               <q-item-label caption>{{ beacon.codes.get(g.code)?.description || '' }}</q-item-label>
             </q-item-section>
             <q-item-section v-if="g.step" side>
@@ -158,12 +158,12 @@ function correct(d: Diagnostic) {
                 <q-item-label class="text-warning">{{ d.data!.srt }}</q-item-label>
               </q-item-section>
               <q-item-section side style="min-width: 340px">
-                <div v-if="d.data?.review" class="row items-center q-gutter-sm">
+                <div v-if="d.data?.review" class="row items-center gap-sm">
                   <StateChip kind="ok" :label="d.data.review.decision === 'accept' ? 'accepted' : `corrected to “${d.data.review.text}”`" />
                   <span class="text-caption">{{ d.data.review.by || '' }}</span>
                   <q-btn flat dense size="sm" no-caps label="Undo" @click="review(d, { clear: true })" />
                 </div>
-                <div v-else class="row items-center q-gutter-sm no-wrap">
+                <div v-else class="row items-center gap-sm no-wrap">
                   <q-btn outline dense size="sm" no-caps label="Accept" @click="review(d, { accept: true })">
                     <q-tooltip>The SRT reading is fine as it is</q-tooltip>
                   </q-btn>

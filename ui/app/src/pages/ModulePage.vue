@@ -7,6 +7,7 @@ import type { LangState, TopicStatus } from '@beacon/shared';
 import PageHeader from '@/components/PageHeader.vue';
 import StagePips from '@/components/StagePips.vue';
 import StateChip from '@/components/StateChip.vue';
+import { fileUrl } from '@/api';
 import { confirm } from '@/composables/confirm';
 import { LANG_NAME, plural, STAGE_LABEL, STEP_HELP, topicPath } from '@/format';
 import { useBeacon } from '@/stores/beacon';
@@ -92,6 +93,19 @@ async function bulk(command: string) {
   if (ok) await beacon.runJob(command, targets, force ? { lang, force: true } : { lang });
 }
 
+const quizzes = computed(() => (m.value?.documents || []).filter((d) => d.quiz));
+async function exportQuizzes() {
+  const n = quizzes.value.length;
+  const ok = await confirm({
+    title: `Export ${plural(n, 'quiz', 'quizzes')} for the LMS?`,
+    lines: [
+      { text: `This runs bcn qti ${props.module}, writing one QTI 2.1 package per unit quiz to ${props.module}/build/qti/.`, strong: `bcn qti ${props.module}` },
+      'Quizzes whose package is already current are skipped. A quiz with errors gets no package.',
+    ],
+  });
+  if (ok) await beacon.runJob('qti', [props.module], {});
+}
+
 const docs = computed(() => (m.value?.documents || [])
   .filter((d) => d.exists || d.path.endsWith('course-map.md') || d.path.endsWith('/activity.md')));
 </script>
@@ -106,20 +120,27 @@ const docs = computed(() => (m.value?.documents || [])
         <StateChip v-if="m.blocked" kind="blocked" :label="`${m.blocked} blocked`" />
         <StateChip v-if="m.stale" kind="stale" :label="`${m.stale} stale`" />
         <StateChip v-if="m.cloud" kind="cloud" :label="`☁ ${m.cloud} cloud-only`" />
+        <q-btn v-if="quizzes.length" outline no-caps icon="quiz" label="Export quizzes to LMS" @click="exportQuizzes">
+          <q-tooltip max-width="320px">{{ STEP_HELP.qti }}</q-tooltip>
+        </q-btn>
         <q-btn outline no-caps label="Run QA on module" @click="beacon.runJob('qa', [module], {})" />
       </PageHeader>
 
       <q-card v-if="m.documents?.length" flat bordered class="q-mb-md">
-        <q-card-section class="row items-center q-gutter-sm q-pb-none">
+        <q-card-section class="row items-center gap-sm q-pb-none">
           <div class="text-subtitle1 text-weight-medium">Module documents</div>
           <StateChip v-if="m.errors" kind="error" :label="plural(m.errors, 'error')" />
           <StateChip v-else kind="ok" label="no problems" />
         </q-card-section>
-        <q-card-section class="row q-gutter-sm">
+        <q-card-section class="row items-center gap-sm">
           <template v-for="d in docs" :key="d.path">
             <q-btn v-if="d.exists" outline dense no-caps :to="`/doc/${d.path}`" :label="d.path.slice(module.length + 1)">
               <q-badge v-if="d.errors" color="negative" floating>{{ d.errors }}</q-badge>
               <q-badge v-else-if="d.warnings" color="warning" floating>{{ d.warnings }}</q-badge>
+            </q-btn>
+            <q-btn v-if="d.quiz?.exists" flat dense no-caps icon="download" :color="d.quiz.stale ? 'warning' : 'primary'"
+              :label="d.quiz.stale ? 'QTI (out of date)' : 'QTI'" :href="fileUrl(d.quiz.package, null, 'download=1')">
+              <q-tooltip>{{ d.quiz.stale ? 'The quiz has changed since this package was made; export again.' : `${plural(d.quiz.questions, 'question')}, ready to import into the LMS` }}</q-tooltip>
             </q-btn>
             <q-btn v-else flat dense no-caps disable :label="`${d.path.slice(module.length + 1)} — missing`">
               <q-tooltip>Not in the working copy yet</q-tooltip>
@@ -129,7 +150,7 @@ const docs = computed(() => (m.value?.documents || [])
       </q-card>
 
       <q-card flat bordered>
-        <q-card-section class="row items-center q-gutter-sm">
+        <q-card-section class="row items-center gap-sm">
           <strong class="text-caption">Show</strong>
           <q-select v-model="state.filter.stage" dense outlined emit-value map-options :options="stageOptions" style="min-width: 150px" aria-label="Stage" />
           <q-select v-model="state.filter.lang" dense outlined emit-value map-options style="min-width: 150px" aria-label="Language"
@@ -142,7 +163,7 @@ const docs = computed(() => (m.value?.documents || [])
           <q-btn flat dense no-caps label="Clear selection" @click="state.selected.clear()" />
         </q-card-section>
         <q-separator />
-        <q-card-section class="row items-center q-gutter-sm bg-grey-2 bulkbar">
+        <q-card-section class="row items-center gap-sm bg-grey-2 bulkbar">
           <strong>{{ nSelected ? `${nSelected} selected` : 'Select topics to act on them' }}</strong>
           <q-btn-toggle v-model="state.lang" dense no-caps unelevated toggle-color="primary" :disable="!nSelected"
             :options="[{ label: 'English', value: 'en' }, { label: 'Mandarin', value: 'zh' }]" />

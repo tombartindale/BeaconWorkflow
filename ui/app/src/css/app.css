@@ -72,6 +72,21 @@ body.body--dark a:not(.q-btn):not(.q-item):not(.q-tab):not(.cell) { color: var(-
 .cell.dim { opacity: .25; }
 .cell .unrev { position: absolute; bottom: 2px; right: 4px; font-size: 10px; color: var(--q-warning); font-weight: 700; }
 
+/* -- topic: the pipeline as a row of steps ---------------------------------------------- */
+.stepflow { display: flex; align-items: center; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+.stepflow .step { min-width: 104px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; text-align: left; }
+.stepflow .step .q-btn__content { flex-direction: column; align-items: flex-start; gap: 1px; }
+.stepflow .step .name { font-weight: 600; font-size: 13.5px; line-height: 1.2; display: flex; align-items: center; gap: 5px; }
+.stepflow .step .cap { font-size: 11px; opacity: .75; line-height: 1.2; white-space: nowrap; }
+.stepflow .step.current { border-color: var(--q-primary); background: var(--q-primary); color: #fff; box-shadow: 0 2px 8px rgba(31, 95, 139, .45); }
+.stepflow .step.current .cap { opacity: .95; font-weight: 600; }
+.stepflow .step.stale { border-color: var(--q-warning); }
+.stepflow .step.failed { border-color: var(--q-negative); }
+.stepflow .step.optional { border-style: dashed; }
+.stepflow .step.wait { cursor: default; border-style: dotted; }
+.stepflow .step.disabled { border-style: dotted; opacity: .5; }
+.stepflow .arrow { opacity: .45; flex: none; }
+
 /* -- topic: script and slide rows ------------------------------------------------------ */
 .panes { display: grid; gap: 16px; }
 .panes.side { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -158,3 +173,53 @@ body.prompting { background: #000; overflow: hidden; }
 .prompter-countdown { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 30vh; color: #d9a441; background: rgba(0, 0, 0, .6); pointer-events: none; }
 .prompter-bar { position: fixed; left: 0; right: 0; bottom: 0; transition: opacity .4s; }
 .prompter-bar.faded { opacity: 0; }
+
+/* -- programme: stage ladder (English on top, Mandarin branching after subtitles) --------------- */
+.ladder { display: grid; column-gap: 4px; row-gap: 6px; align-items: center; width: 100%; }
+.ladder-lang { font-size: 11px; font-weight: 700; color: var(--ink-3, #87919a); grid-column: 1; }
+.ladder-cell {
+  position: relative; height: 22px; border-radius: 3px; overflow: hidden;
+  background: var(--stage-0, #e6e3dc);
+}
+.ladder-cell .fill { position: absolute; inset: 0 auto 0 0; background: #6a8093; }
+.ladder-cell.zh .fill { background: #7c6aa0; }
+.ladder-cell.done .fill { background: #2f4b62; }
+.ladder-cell.zh.done .fill { background: #4f3f78; }
+.ladder-cell .n {
+  position: relative; display: block; text-align: center; font-size: 11.5px; line-height: 22px; font-weight: 600;
+  color: #fff; text-shadow: 0 0 3px rgba(0, 0, 0, .55); font-variant-numeric: tabular-nums;
+}
+.ladder-branch { font-size: 10.5px; color: var(--ink-3, #87919a); text-align: right; white-space: nowrap; padding-right: 2px; }
+.ladder-done { text-align: right; white-space: nowrap; }
+.ladder-h { font-size: 10.5px; line-height: 1.2; color: var(--ink-2, #4f5b66); text-align: center; }
+.ladder-h.zh { color: #6a5a92; }
+/* Fixed side columns on the programme list, so every module's ladder lines up with the headings. */
+.prog-name { flex: 0 0 220px !important; max-width: 220px; }
+.prog-flags { flex: 0 0 230px !important; width: 230px; }
+
+/* -- topic: steps for both languages, Mandarin below, joined to English by two connectors ------ */
+.stepscroll { overflow-x: auto; padding-bottom: 2px; }
+.stepwrap { position: relative; width: max-content; min-width: 100%; }
+.steprow { overflow: visible; }
+.steprow.zh { margin-top: 34px; }            /* room between the rows for the connectors */
+.steprow .row-label {
+  width: 30px; flex: none; font-size: 11px; font-weight: 700; color: #87919a;
+  display: flex; align-items: center; gap: 3px;
+}
+.steplinks { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.steplinks .link { fill: none; stroke: #8f7bd0; stroke-width: 1.75; stroke-dasharray: 5 4; stroke-linejoin: round; }
+.steplinks .head { fill: #8f7bd0; }
+
+/* -- gap-based row spacing --------------------------------------------------------------------
+   Quasar's q-gutter-* utilities space children with margin (margin-top + margin-left on every
+   child). That is fine for wrapping grids of same-shaped blocks, but in a `row items-center`
+   line that mixes plain text/icons with a q-chip (whose own base style carries a non-zero
+   margin, only partly cancelled by q-ma-none), the leftover asymmetric margin shifts that one
+   child a few pixels off the shared center line - the classic "chip sits higher than its
+   label" bug. `gap` never touches margin, so it can't cause that: every child's own box
+   centers on the line exactly where `align-items: center` puts it. Use these in place of
+   q-gutter-sm/xs/md on any `row`/`flex` container that mixes a q-chip, q-btn or q-icon with
+   plain text and relies on items-center for vertical alignment. */
+.gap-xs { gap: 4px; }
+.gap-sm { gap: 8px; }
+.gap-md { gap: 16px; }

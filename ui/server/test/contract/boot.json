@@ -494,6 +494,36 @@
     "level": "error"
    },
    {
+    "area": "QUIZ",
+    "code": "QUIZ_FORMAT",
+    "description": "A quiz question is malformed: no text, too few options, or a repeated option letter.",
+    "level": "error"
+   },
+   {
+    "area": "QUIZ",
+    "code": "QUIZ_NOT_A_QUIZ",
+    "description": "The activity is not a quiz, so there is nothing to export.",
+    "level": "info"
+   },
+   {
+    "area": "QUIZ",
+    "code": "QUIZ_NO_CORRECT",
+    "description": "A quiz question has no option marked correct with ✔.",
+    "level": "error"
+   },
+   {
+    "area": "QUIZ",
+    "code": "QUIZ_NO_FEEDBACK",
+    "description": "A quiz option has no → feedback.",
+    "level": "warn"
+   },
+   {
+    "area": "QUIZ",
+    "code": "QUIZ_NO_QUESTIONS",
+    "description": "A quiz has no ## question sections.",
+    "level": "error"
+   },
+   {
     "area": "RENDER",
     "code": "RENDER_FAILED",
     "description": "Marp did not produce the expected output.",

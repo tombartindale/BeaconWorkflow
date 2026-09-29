@@ -18,3 +18,4 @@ ui/*/node_modules/
 ui/server/dist/
 ui/app/dist/
 ui/app/.quasar/
+/partner-examples/*

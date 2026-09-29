@@ -191,7 +191,7 @@ onBeforeUnmount(() => {
     <div :class="['prompter-bar', { faded }]">
       <q-toolbar class="bg-grey-10 text-grey-4 q-gutter-sm" style="flex-wrap: wrap">
         <q-btn :color="playing ? 'amber-8' : 'grey-8'" unelevated no-caps :icon="playing ? 'pause' : 'play_arrow'" :label="playing ? 'Pause' : 'Play'" @click="setPlaying(!playing)"><q-tooltip>Space</q-tooltip></q-btn>
-        <span v-for="k in (['speed', 'size', 'width'] as const)" :key="k" class="row items-center q-gutter-xs">
+        <span v-for="k in (['speed', 'size', 'width'] as const)" :key="k" class="row items-center gap-xs">
           <span class="text-caption text-capitalize">{{ k }}</span>
           <q-btn dense flat round icon="remove" @click="change(k, k === 'speed' ? -1 : k === 'size' ? -4 : -5)" />
           <b>{{ prefs[k] }}{{ k === 'width' ? '%' : '' }}</b>

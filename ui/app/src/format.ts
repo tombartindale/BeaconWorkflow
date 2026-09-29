@@ -20,6 +20,8 @@ export const STEP_HELP: Record<string, string> = {
     + 'and stays clear of the subtitle area. Needs validate to have passed.',
   script: 'Make the recording script: the narration alone, as a large-print PDF, plus copies for a teleprompter.',
   bumpers: 'Make the intro (the title over the background video) and the outro (the logo).',
+  qti: 'Export unit quizzes as QTI 2.1 packages (.zip) to import into the LMS. A quiz with a question that has '
+    + 'no correct answer, or fewer than two options, is not exported.',
   cues: 'Match the script to the editor\'s subtitles to find when each slide starts (the cue sheet), and list '
     + 'where the recording differs from the script. Needs the edited video and its subtitles. English only: '
     + 'Mandarin reuses the English timings.',
@@ -35,7 +37,7 @@ export const STEP_HELP: Record<string, string> = {
 
 export const LANG_NAME = { en: 'English', zh: 'Mandarin' } as const;
 
-export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+export const plural = (n: number, word: string, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
 
 export function fmtTime(sec: number | null | undefined): string {
   if (sec === null || sec === undefined || Number.isNaN(sec)) return '—';

@@ -82,7 +82,7 @@ const copy = () => navigator.clipboard.writeText(message.value).then(() => beaco
       <div class="col-12 col-md-6 q-gutter-y-md">
         <q-card flat bordered>
           <q-card-section class="text-subtitle1 text-weight-medium q-pb-none">Export</q-card-section>
-          <q-card-section class="row items-center q-gutter-sm">
+          <q-card-section class="row items-center gap-sm">
             <q-select v-model="scope" dense outlined :options="scopes" label="Module or unit" style="min-width: 220px" />
             <q-btn unelevated color="primary" no-caps label="Export batch" :disable="!scope || busy" :loading="busy" @click="doExport" />
           </q-card-section>
@@ -125,7 +125,7 @@ const copy = () => navigator.clipboard.writeText(message.value).then(() => beaco
           <q-card-section class="text-caption text-grey-7">Expected names: &lt;topic_id&gt;.zh.md and &lt;topic_id&gt;.zh.srt.</q-card-section>
         </q-card>
         <q-card v-if="lastImport?.env" flat bordered>
-          <q-card-section class="row items-center q-gutter-sm">
+          <q-card-section class="row items-center gap-sm">
             <div class="text-subtitle1 text-weight-medium">Imported {{ lastImport.item.name }}</div>
             <StateChip :kind="lastImport.env.ok ? 'ok' : 'blocked'" :label="lastImport.env.ok ? 'all passed' : 'problems found'" />
           </q-card-section>

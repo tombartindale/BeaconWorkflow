@@ -52,6 +52,8 @@ def run(args: argparse.Namespace, env: Envelope, target: Target) -> None:
             if not s.exists or not s.fresh:
                 continue
             for d in (s.env or {}).get("diagnostics", []):
+                if d.get("level") == "error" and d.get("code") in TopicState.NOT_READY:
+                    continue  # a step that is waiting for an input is not a problem to fix
                 d = dict(d)
                 d.setdefault("topic", t.id)
                 d["lang"] = d.get("lang") or lang

@@ -1,4 +1,4 @@
-import { api, connect, loadJobs, loadStatus, notify, renderBanners, store, subscribe } from './core.js';
+import { api, connect, installTooltips, loadJobs, loadStatus, notify, renderBanners, store, subscribe } from './core.js';
 import { programmeView } from './views/programme.js';
 import { moduleView } from './views/module.js';
 import { topicView } from './views/topic.js';
@@ -60,6 +60,7 @@ async function start() {
     return;
   }
   store.codes = new Map((store.boot.codes || []).map(c => [c.code, c]));
+  installTooltips();
   renderBanners();
   subscribe(kind => { if (kind === 'jobs' || kind === 'job-event') updateNavCount(); });
   window.addEventListener('hashchange', route);

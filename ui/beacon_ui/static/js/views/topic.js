@@ -3,7 +3,7 @@
 // mistimed cue gets found: ten seconds of watching beats any report.
 import {
   api, awaitJob, confirmModal, fmtAgo, fmtBytes, fmtTC, fmtTime, h, levelChip, mount, NEXT_LABEL, pips, runJob,
-  STAGE_LABEL, store, subscribe, toast, topicPath, ackControls,
+  STAGE_LABEL, STEP_HELP, store, subscribe, toast, topicPath, ackControls,
 } from '../core.js';
 
 const STEPS = ['validate', 'render', 'cues', 'subtitles', 'compose', 'package', 'qa'];
@@ -96,25 +96,30 @@ export function topicView(main, id, startAt) {
       await runJob(step, [rel], args);
     };
     mount(els.actions, h('div', { class: 'actions' },
-      h('span', { class: 'controls' }, h('span', { class: 'seg' }, ['en', 'zh'].map(l => h('button', {
-        class: ui.lang === l ? 'on' : '', onclick: () => { ui.lang = l; renderActions(); } }, l === 'en' ? 'English' : 'Mandarin')))),
+      h('span', { class: 'controls', 'data-tip': 'Which language the buttons to the right work on.' },
+        h('span', { class: 'seg' }, ['en', 'zh'].map(l => h('button', {
+          class: ui.lang === l ? 'on' : '', onclick: () => { ui.lang = l; renderActions(); } }, l === 'en' ? 'English' : 'Mandarin')))),
       h('span', { class: 'sep' }),
-      STEPS.map(s => h('button', {
-        class: `btn${next === s ? ' next' : ''}`, title: next === s ? 'This is the next step' : '',
-        disabled: (s === 'cues' && ui.lang === 'zh') || (s === 'qa' && ui.lang === 'zh'),
-        onclick: () => run(s) }, s)),
+      STEPS.map(s => h('span', { 'data-tip': STEP_HELP[s] + (next === s ? ' This is the next step for this topic.' : '')
+          + ((s === 'cues' || s === 'qa') && ui.lang === 'zh' ? ' (English only: switch to English to run it.)' : '') },
+        h('button', {
+          class: `btn${next === s ? ' next' : ''}`,
+          disabled: (s === 'cues' && ui.lang === 'zh') || (s === 'qa' && ui.lang === 'zh'),
+          onclick: () => run(s) }, s))),
       h('span', { class: 'sep' }),
-      h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: ui.force, onchange: e => { ui.force = e.target.checked; } }), 'force re-run'),
-      h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: ui.noBumpers, onchange: e => { ui.noBumpers = e.target.checked; } }), 'no bumpers'),
+      h('label', { class: 'check', 'data-tip': 'Rebuild even if the result is already up to date. Normally a step is skipped when nothing it depends on has changed.' },
+        h('input', { type: 'checkbox', checked: ui.force, onchange: e => { ui.force = e.target.checked; } }), 'force re-run'),
+      h('label', { class: 'check', 'data-tip': 'Leave the intro and outro off the draft video made by compose. Quicker, and the player\'s times then match the cue sheet exactly. Delivered files are unaffected.' },
+        h('input', { type: 'checkbox', checked: ui.noBumpers, onchange: e => { ui.noBumpers = e.target.checked; } }), 'no bumpers'),
       h('span', { class: 'spacer' }),
-      h('button', { class: 'btn', title: 'The narration as a large-print PDF, plus copies for a teleprompter', onclick: async () => {
+      h('button', { class: 'btn', 'data-tip': STEP_HELP.script + ' Links appear at the top of the Script pane.', onclick: async () => {
         const job = await runJob('script', [rel], ui.force ? { force: true } : {});
         const done = await awaitJob(job.id);
         await load();
         if (done.state === 'done') toast('Recording script ready: see the links at the top of the Script pane.');
         else toast('The recording script could not be made; see Jobs.', true);
       } }, 'Recording script'),
-      h('button', { class: 'btn', title: `Title-card intro and outro videos, in ${ui.lang === 'en' ? 'English' : 'Mandarin'} (the language chosen on the left)`, onclick: async () => {
+      h('button', { class: 'btn', 'data-tip': `${STEP_HELP.bumpers} In ${ui.lang === 'en' ? 'English' : 'Mandarin'}, the language chosen on the left. They appear at the top and bottom of the Slides pane.`, onclick: async () => {
         const args = { lang: ui.lang, ...(ui.force ? { force: true } : {}) };
         const job = await runJob('bumpers', [rel], args);
         const done = await awaitJob(job.id);
@@ -122,9 +127,9 @@ export function topicView(main, id, startAt) {
         if (done.state === 'done') toast('Intro and outro ready: see the top of the Slides pane.');
         else toast('The intro and outro could not be made; see Jobs.', true);
       } }, 'Intro/outro'),
-      h('a', { class: 'btn', href: `#/prompt/${id}`, target: '_blank', title: 'Open the narration as a full-screen teleprompter in a new tab' }, 'Teleprompter'),
-      h('button', { class: 'btn', onclick: runVerify }, 'Verify files'),
-      h('a', { class: 'btn', href: `#/jobs` }, 'Jobs')));
+      h('a', { class: 'btn', href: `#/prompt/${id}`, target: '_blank', 'data-tip': 'Open the narration as a full-screen teleprompter in a new tab. Space plays and pauses; the arrow keys change speed and jump between slides.' }, 'Teleprompter'),
+      h('button', { class: 'btn', onclick: runVerify, 'data-tip': 'Open each of this topic\'s files to confirm it is what it claims (not empty, not corrupt), and that delivered files match their checksums. Results show in the Artefacts table.' }, 'Verify files'),
+      h('a', { class: 'btn', href: `#/jobs`, 'data-tip': 'Running and recent jobs, with progress, logs and cancel.' }, 'Jobs')));
   }
 
   // -- script -----------------------------------------------------------------------------

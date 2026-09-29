@@ -253,3 +253,52 @@ export function ackControls(d) {
         runJob('ack', [path], { fingerprint: fp, ...(note.value.trim() ? { note: note.value.trim() } : {}) });
     } }, 'Acknowledge'));
 }
+
+// -- what each action does, shared by every page that offers it ---------------------------------
+export const STEP_HELP = {
+  validate: 'Check the script against the rules: structure, word count for the minutes, dates, forbidden words, '
+    + 'phrases that point at the screen, title length, images. Quick. Run it after any edit.',
+  render: 'Turn the slides into 1920×1080 images and a PDF deck in the house theme, and check the text fits '
+    + 'and stays clear of the subtitle area. Needs validate to have passed.',
+  script: 'Make the recording script: the narration alone, as a large-print PDF, plus copies for a teleprompter.',
+  bumpers: 'Make the intro (the title over the background video) and the outro (the logo).',
+  cues: 'Match the script to the editor\'s subtitles to find when each slide starts (the cue sheet), and list '
+    + 'where the recording differs from the script. Needs the edited video and its subtitles. English only: '
+    + 'Mandarin reuses the English timings.',
+  subtitles: 'Prepare the subtitles for delivery, applying any approved fixes to misheard words (timings are never '
+    + 'changed). For Mandarin, it checks the translator kept every timing exactly.',
+  compose: 'Build a draft video (slides with the presenter inset and subtitles burned in) to check that the '
+    + 'slides change at the right moments. For checking only; it is not delivered.',
+  package: 'Assemble the delivery folder: the video, slide images, subtitles, cue sheet and script, with '
+    + 'checksums. Needs cues and subtitles to be done.',
+  qa: 'Run every check on the topic, plus cross-checks: video length, files older than the script, and '
+    + 'misheard words not yet reviewed.',
+};
+
+// A tooltip that appears quickly and stays inside the window: any element with data-tip.
+export function installTooltips() {
+  const tip = h('div', { class: 'tooltip', role: 'tooltip' });
+  document.body.append(tip);
+  let timer = null;
+  let current = null;
+  const hide = () => { clearTimeout(timer); current = null; tip.classList.remove('show'); };
+  document.addEventListener('mouseover', (e) => {
+    const el = e.target.closest?.('[data-tip]');
+    if (el === current) return;
+    hide();
+    if (!el) return;
+    current = el;
+    timer = setTimeout(() => {
+      tip.textContent = el.dataset.tip;
+      tip.classList.add('show');
+      const r = el.getBoundingClientRect();
+      const w = tip.offsetWidth, hgt = tip.offsetHeight;
+      const left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+      const below = r.bottom + 8 + hgt < window.innerHeight;
+      tip.style.left = `${left}px`;
+      tip.style.top = `${below ? r.bottom + 8 : r.top - hgt - 8}px`;
+    }, 250);
+  });
+  document.addEventListener('mousedown', hide);
+  window.addEventListener('scroll', hide, true);
+}

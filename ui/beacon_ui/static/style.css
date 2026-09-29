@@ -475,3 +475,11 @@ body.prompting main { padding: 0; max-width: none; }
 .ed-help { padding: 6px 12px; border-top: 1px solid var(--line-2); }
 .ed-side { position: sticky; top: 64px; max-height: calc(100vh - 90px); overflow: auto; }
 @media (max-width: 1100px) { .ed-wrap { grid-template-columns: 1fr; } .ed-side { position: static; } }
+
+/* -- tooltips ([data-tip]) ------------------------------------------------------------------------ */
+.tooltip {
+  position: fixed; z-index: 90; max-width: 320px; padding: 8px 10px; border-radius: 6px; pointer-events: none;
+  background: var(--ink); color: var(--bg); font-size: 12.5px; line-height: 1.4; box-shadow: var(--shadow);
+  opacity: 0; transition: opacity .12s; left: -9999px; top: -9999px;
+}
+.tooltip.show { opacity: 1; }

@@ -1,7 +1,7 @@
 // Module: units down, topics across, one split cell per topic (English | Mandarin).
 // Stage is shown by position; colour marks only stale and blocked. Bulk actions live here,
 // where the scope is visible, and say what they will do before they run.
-import { confirmModal, h, mount, pips, runJob, STAGE_LABEL, store, subscribe, topicPath } from '../core.js';
+import { confirmModal, h, mount, pips, runJob, STAGE_LABEL, STEP_HELP, store, subscribe, topicPath } from '../core.js';
 
 const BULK = ['validate', 'render', 'script', 'bumpers', 'cues', 'compose', 'package'];
 
@@ -131,7 +131,8 @@ export function moduleView(main, module) {
       h('strong', {}, n ? `${n} selected` : 'Select topics to act on them'),
       h('select', { 'aria-label': 'Language for actions', disabled: !n, onchange: e => { state.lang = e.target.value; } },
         h('option', { value: 'en', selected: state.lang === 'en' }, 'English'), h('option', { value: 'zh', selected: state.lang === 'zh' }, 'Mandarin')),
-      BULK.map(c => h('button', { class: 'btn', disabled: !n, onclick: () => bulk(c, rows) }, c)),
+      BULK.map(c => h('span', { 'data-tip': `${STEP_HELP[c]} Runs on the selected topics; you confirm first.` },
+        h('button', { class: 'btn', disabled: !n, onclick: () => bulk(c, rows) }, c))),
       h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: state.force, disabled: !n, onchange: e => { state.force = e.target.checked; } }), 'force'),
       h('span', { class: 'spacer' }),
       h('span', { class: 'muted small' }, 'Click a cell to open it; ⌘-click or tick to select.'));

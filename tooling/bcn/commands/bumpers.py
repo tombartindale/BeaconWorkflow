@@ -1,7 +1,7 @@
 """bcn bumpers: the intro and outro for a topic, each a still card faded in and out.
 
-The intro is the topic's title, from the front matter of topic.md or topic.zh.md,
-laid over the theme's background video (or on its background colour if it names
+The intro is the module code above the topic's title (from the front matter of
+topic.md or topic.zh.md), laid over the theme's background video (or on its background colour if it names
 none). The outro is the logo the theme names, on its own. Cards are rendered to PNG
 with the pinned Chrome; ffmpeg holds each for the durations in the theme's [bumper]
 table, fading from and to black, with a silent stereo track so it joins cleanly to
@@ -66,8 +66,8 @@ main {{ width: {W}px; height: {H}px; box-sizing: border-box; padding: {round(H *
 """
 
 
-def intro_card_html(theme: Theme, title: str, lang: str, over_video: bool = False) -> str:
-    """The intro: the topic title alone. No logo; that is the outro.
+def intro_card_html(theme: Theme, title: str, lang: str, over_video: bool = False, module: str = "") -> str:
+    """The intro: the module code above the topic title. No logo; that is the outro.
 
     Over a background video the card is transparent and the title carries a soft
     shadow, so it stays legible whatever the video does behind it.
@@ -77,10 +77,13 @@ def intro_card_html(theme: Theme, title: str, lang: str, over_video: bool = Fals
     zh = "word-break: normal; line-break: strict;" if lang == "zh" else ""
     shadow = "text-shadow: 0 2px 24px rgba(0, 0, 0, .55);" if over_video else ""
     css = f"""
+#module {{ font-family: {_font_stack(theme.fonts['en'])}; font-weight: 500; font-size: {round(H * 0.04)}px;
+           letter-spacing: 0.18em; color: {b['color']}; opacity: 0.85; {shadow} }}
 #box {{ width: {round(W * 0.78)}px; max-height: {round(H * 0.5)}px; display: flex; justify-content: center; }}
 #title {{ margin: 0; font-family: {_font_stack(theme.fonts[lang])}; font-weight: {theme.title_weight}; color: {b['color']};
           line-height: 1.2; text-align: center; text-wrap: balance; {zh} {shadow} }}"""
-    return _page(theme, lang, f'<div id="box"><h1 id="title">{html.escape(title)}</h1></div>', css,
+    code = f'<div id="module">{html.escape(module)}</div>' if module else ""
+    return _page(theme, lang, f'{code}<div id="box"><h1 id="title">{html.escape(title)}</h1></div>', css,
                  transparent=over_video)
 
 
@@ -142,7 +145,7 @@ def bumpers_topic(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, lang
     work.mkdir(parents=True)
     try:
         video = theme.asset(b["background_video"]) if b["background_video"] else None
-        (work / "intro-card.html").write_text(intro_card_html(theme, title, lang, over_video=bool(video)), encoding="utf-8")
+        (work / "intro-card.html").write_text(intro_card_html(theme, title, lang, over_video=bool(video), module=t.module), encoding="utf-8")
         (work / "outro-card.html").write_text(outro_card_html(theme, lang), encoding="utf-8")
         hi, lo = TITLE_PX[lang]
         fit: dict = {}

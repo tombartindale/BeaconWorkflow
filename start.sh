@@ -17,7 +17,7 @@ REMOTE="${BEACON_REMOTE:-$HOME/Library/CloudStorage/OneDrive-NorthumbriaUniversi
 ROOT="${BEACON_ROOT:-$HERE/working_area}"
 PORT="${BEACON_PORT:-8420}"
 BCN="$HERE/tooling/.venv/bin/bcn"
-UI="$HERE/tooling/.venv/bin/beacon-ui"
+UI="$HERE/ui/server/bin/beacon-ui"
 URL="http://127.0.0.1:$PORT"
 
 say()  { printf '\033[1m%s\033[0m\n' "$*"; }
@@ -40,7 +40,8 @@ if curl -fsS -o /dev/null "$URL/api/boot" 2>/dev/null; then
 fi
 
 # -- installed and pinned? ------------------------------------------------------------
-[ -x "$BCN" ] && [ -x "$UI" ] || fail "Beacon is not installed yet. Run: $HERE/scripts/setup.sh"
+[ -x "$BCN" ] && [ -f "$HERE/ui/server/dist/cli.js" ] && [ -f "$HERE/ui/app/dist/spa/index.html" ] \
+  || fail "Beacon is not installed yet. Run: $HERE/scripts/setup.sh"
 say "Checking tools…"
 "$BCN" doctor "$HERE" --human --quiet || fail "A pinned tool is missing or the wrong version (see above). Run scripts/setup.sh."
 

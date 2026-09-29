@@ -1,6 +1,7 @@
 // The HTTP API is the contract (spec §2.3). Every case here was recorded from the Python
-// backend (npm run record -w server) and the Node backend must give the same answers,
-// apart from times, durations and where the temporary root lives.
+// backend this one replaced, and the backend must keep giving the same answers, apart from
+// times, durations and where the temporary root lives. When the API changes on purpose,
+// re-record with `npm run record -w server` and review the fixture diff like code.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { request as httpRequest } from 'node:http';
 import { join } from 'node:path';
@@ -25,8 +26,8 @@ async function call(path: string, init: RequestInit = {}): Promise<Reply> {
   if (type === 'application/json') body = JSON.parse(text);
   return { status: r.status, type, body };
 }
-// The Python backend does not read the body of a request it rejects, or of one whose route
-// ignores it, which leaves the body on a kept-alive connection. Closing avoids that.
+// Closing after each write keeps every request on a fresh connection, as when these were
+// recorded (the Python backend could leave an unread body on a kept-alive connection).
 const post = (path: string, body: unknown, method = 'POST') =>
   call(path, { method, body: JSON.stringify(body), headers: { 'Content-Type': 'application/json', Connection: 'close' } });
 
@@ -71,7 +72,7 @@ function check(name: string, reply: Reply) {
   expect(got).toEqual(JSON.parse(readFileSync(file, 'utf8')));
 }
 
-describe(`API contract (${process.env.BEACON_BACKEND || 'node'} backend)`, () => {
+describe('API contract', () => {
   describe('reads', () => {
     it('boot', async () => {
       // Tool versions and paths belong to the machine, not the contract: keep which tools and whether they pass.
@@ -141,7 +142,6 @@ describe(`API contract (${process.env.BEACON_BACKEND || 'node'} backend)`, () =>
     it('empty intake', async () => check('intake-empty', await post('/api/intake', { text: '  ' })));
     it('import from outside returned/', async () => check('translation-import-outside', await post('/api/translation/import', { source: 'KV7015' })));
     it('upload that is not a zip', async () => {
-      // Python leaves the unread body on a kept-alive connection; closing it keeps later requests clean.
       check('translation-upload-bad', await call('/api/translation/upload?name=x.txt', { method: 'POST', body: 'hello', headers: { Connection: 'close' } }));
     });
   });

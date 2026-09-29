@@ -11,9 +11,10 @@ The UI contains no pipeline logic. It calls `bcn` and renders the envelopes it r
 
 ```sh
 brew install ffmpeg            # pinned to 7.1.x; bcn refuses other versions
-scripts/setup.sh               # venv, pinned Marp (npm ci), pinned Chrome for Testing, then bcn doctor
+nvm install 22                 # Node 22.22+; Marp is pinned to major 22 and the UI uses the same Node
+scripts/setup.sh               # venv, pinned Marp (npm ci), pinned Chrome for Testing, the UI (npm ci, build), then bcn doctor
 scripts/demo.sh /tmp/beacon-demo
-tooling/.venv/bin/beacon-ui --root /tmp/beacon-demo   # http://127.0.0.1:8420
+ui/server/bin/beacon-ui --root /tmp/beacon-demo   # http://127.0.0.1:8420
 ```
 
 Setup is the only step that uses the network. Pinned versions live in [tooling/bcn/tools.py](tooling/bcn/tools.py) and [tooling/node/package.json](tooling/node/package.json): Node 22, marp-cli 4.5.1, marp-core 4.4.0, puppeteer-core 24.43.1 (the version marp-cli itself uses), and Chrome for Testing 154.0.8037.57. `bcn doctor` checks all of them.
@@ -24,7 +25,7 @@ The demo leaves two things for a person to do, which shows the UI's main loop:
 
 A sample Mandarin return is in `translation/returned/sample/`. Slide 5 is deliberately overloaded, so a Mandarin render fails with a safe-area violation.
 
-Run the tests with `cd tooling && .venv/bin/python -m pytest`.
+Run the tests with `cd tooling && .venv/bin/python -m pytest` (bcn) and `cd ui && npm test` (UI backend).
 
 ## bcn
 
@@ -195,7 +196,11 @@ bcn sync working_area --push               # local script edits, review decision
 
 ## Beacon UI
 
-`beacon-ui --root PATH [--port 8420]`. It uses the Python standard library only, with vanilla JS and no build step, so it runs offline.
+`ui/server/bin/beacon-ui --root PATH [--port 8420]`. A Node backend (TypeScript, Fastify) and a Vue 3 + Quasar front end, in one npm workspace under [ui/](ui/): `shared/` holds the types (bcn's envelopes are generated from `bcn schema` with `npm run gen:envelopes`), `server/` the backend, `app/` the front end. Setup builds it; after that it runs offline.
+
+- **Developing:** run the backend (`./start.sh`, or `npm run dev:server -- --root PATH`), then `npm run dev:app` in `ui/` for the front end with hot reload; it passes `/api` and `/files` through to the backend on port 8420.
+- **Checking:** `npm test` runs the backend's tests. The API contract tests in `ui/server/test/contract/` hold the backend to fixed answers for every route, recorded against `example/`. `npm run typecheck` checks both halves.
+- **Electron** is not set up yet. The backend is a library (`createServer()` in `ui/server/src/index.ts`) so a desktop build can start it the same way; see the spec, §8 and §9.
 
 **Single user, bound to 127.0.0.1, no authentication.** Requests with a foreign Host or Origin header are refused, and file access is confined to the programme root, symlinks resolved. If more than one person needs it, that is a different, hosted application: decide that deliberately.
 

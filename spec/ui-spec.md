@@ -35,7 +35,7 @@ Off-the-shelf parts throughout. The UI's value is in what it shows, not in its p
 | Front end | Vue 3 with **Quasar** | A full component set (tables, dialogs, tabs, notifications, tooltips, progress, file drop) with its own styling, dark mode and icons. Quasar CLI builds the same project as a browser SPA now and as an Electron app later |
 | Styling | Quasar's components and utility classes | No Tailwind. It overlaps with Quasar's utility classes and fights its component styles. The house palette is set once as Quasar brand colours. The only custom CSS is for things no component covers: the module grid cells, the video timeline and the teleprompter |
 | Routing and state | Vue Router (hash history), Pinia | Standard with Quasar. Hash URLs keep `#/topic/…` links working |
-| Backend | Node 22 LTS, **Fastify** | Small, fast, typed, with a plugin model for static files and SSE |
+| Backend | Node 22 LTS (22.22 or later), **Fastify** | Small, fast and typed. The same major Node that `bcn` pins for Marp, since jobs inherit the backend's `PATH` |
 | Persistence | SQLite through `better-sqlite3` | The same small file and schema as before (section 3). Works under Electron once rebuilt for it |
 | Tests | Vitest | For both halves, including API contract tests against a fixture programme root (`example/`) |
 
@@ -54,7 +54,7 @@ The backend being a library with a thin CLI on top is what makes Electron cheap 
 
 ### 2.3 The HTTP API is the contract
 
-The Node backend serves the same routes, request bodies, responses and SSE events as the Python backend it replaces, as listed in [the current server](../ui/beacon_ui/server.py). The front end can then be built against either backend, and contract tests can run the same requests against both during the move and require identical results, apart from timestamps and ids.
+The Node backend serves the same routes, request bodies, responses and SSE events as the Python backend it replaced. The contract tests in `ui/server/test/contract/` pin them: every route's answer against `example/`, first recorded from the Python backend and matched by the Node one before the Python one was deleted. They are re-recorded only when the API changes on purpose, and the fixture diff is reviewed like code.
 
 The rules that live in the backend move across unchanged:
 

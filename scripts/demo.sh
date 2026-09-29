@@ -16,4 +16,4 @@ done
 "$BCN" compose "$DEST/KV7015/U01/T02" --quiet --human --no-bumpers || true
 "$BCN" status "$DEST" --quiet --human | head -8
 echo
-echo "UI: $PWD/tooling/.venv/bin/beacon-ui --root $DEST"
+echo "UI: $PWD/ui/server/bin/beacon-ui --root $DEST"

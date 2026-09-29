@@ -11,8 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx watch src/cli.ts",
     "test": "vitest run",
-    "test:python": "BEACON_BACKEND=python vitest run test/contract.test.ts",
-    "record": "RECORD=1 BEACON_BACKEND=python vitest run test/contract.test.ts"
+    "record": "RECORD=1 vitest run test/contract.test.ts"
   },
   "dependencies": {
     "@fastify/static": "10.1.5",

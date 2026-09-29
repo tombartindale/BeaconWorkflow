@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  launchd agent for the Beacon UI backend. Edit the two paths, then:
+  launchd agent for the Beacon UI backend. Edit the paths (the repo, the programme root, and
+  the Node 22 bin directory, e.g. ~/.nvm/versions/node/v22.x.y/bin), then:
     cp scripts/com.beacon.ui.plist ~/Library/LaunchAgents/
     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.beacon.ui.plist
   Stop with: launchctl bootout gui/$(id -u)/com.beacon.ui
@@ -11,12 +12,14 @@
   <key>Label</key><string>com.beacon.ui</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/YOU/BeaconWorkflow/tooling/.venv/bin/beacon-ui</string>
+    <string>/Users/YOU/.nvm/versions/node/v22.x.y/bin/node</string>
+    <string>/Users/YOU/BeaconWorkflow/ui/server/bin/beacon-ui</string>
     <string>--root</string>
     <string>/Users/YOU/Beacon/programme</string>
   </array>
   <key>EnvironmentVariables</key>
-  <dict><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
+  <!-- bcn runs Marp with the node on PATH, so the same Node 22 must come first. -->
+  <dict><key>PATH</key><string>/Users/YOU/.nvm/versions/node/v22.x.y/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
   <key>StandardErrorPath</key><string>/tmp/beacon-ui.log</string>

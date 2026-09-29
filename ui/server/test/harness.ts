@@ -1,5 +1,5 @@
-// Starts a backend (the Python one or this one) against a private copy of example/, so
-// the same tests can hold both to the same contract.
+// Starts the backend against a private copy of example/. The contract fixtures were first
+// recorded from the Python backend this one replaced, and now pin its behaviour.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { cpSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -8,10 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-export const BACKEND = (process.env.BEACON_BACKEND || 'node') as 'node' | 'python';
-
 export interface Backend {
-  kind: 'node' | 'python';
   url: string;
   port: number;
   root: string;
@@ -30,7 +27,7 @@ function freePort(): Promise<number> {
   });
 }
 
-export async function startBackend(kind: 'node' | 'python' = BACKEND): Promise<Backend> {
+export async function startBackend(): Promise<Backend> {
   const base = realpathSync(mkdtempSync(join(tmpdir(), 'beacon-contract-')));
   const root = join(base, 'root');
   const dataDir = join(base, 'data');
@@ -38,10 +35,8 @@ export async function startBackend(kind: 'node' | 'python' = BACKEND): Promise<B
   cpSync(join(REPO, 'example'), root, { recursive: true, preserveTimestamps: true });
   const port = await freePort();
   const args = ['--root', root, '--port', String(port), '--data-dir', dataDir];
-  const child: ChildProcess = kind === 'python'
-    ? spawn(join(REPO, 'tooling', '.venv', 'bin', 'beacon-ui'), args, { stdio: ['ignore', 'pipe', 'pipe'] })
-    : spawn(process.execPath, ['--import', 'tsx', join(REPO, 'ui', 'server', 'src', 'cli.ts'), ...args],
-      { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, BCN: join(REPO, 'tooling', '.venv', 'bin', 'bcn') } });
+  const child: ChildProcess = spawn(process.execPath, ['--import', 'tsx', join(REPO, 'ui', 'server', 'src', 'cli.ts'), ...args],
+    { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, BCN: join(REPO, 'tooling', '.venv', 'bin', 'bcn') } });
   let log = '';
   child.stdout?.on('data', (b) => { log += b; });
   child.stderr?.on('data', (b) => { log += b; });
@@ -56,15 +51,15 @@ export async function startBackend(kind: 'node' | 'python' = BACKEND): Promise<B
   // Ready when status can be read and the startup queries (doctor, codes) have landed.
   const deadline = Date.now() + 120_000;
   for (;;) {
-    if (child.exitCode !== null) throw new Error(`${kind} backend exited (${child.exitCode}):\n${log}`);
+    if (child.exitCode !== null) throw new Error(`backend exited (${child.exitCode}):\n${log}`);
     try {
       const boot = await (await fetch(`${url}/api/boot`)).json() as { codes: unknown[]; doctor: unknown };
       if (boot.doctor && boot.codes.length && (await fetch(`${url}/api/status`)).ok) break;
     } catch { /* not listening yet */ }
-    if (Date.now() > deadline) { await stop(); throw new Error(`${kind} backend did not start:\n${log}`); }
+    if (Date.now() > deadline) { await stop(); throw new Error(`backend did not start:\n${log}`); }
     await new Promise((r) => setTimeout(r, 300));
   }
-  return { kind, url, port, root, dataDir, logs: () => log, stop };
+  return { url, port, root, dataDir, logs: () => log, stop };
 }
 
 // -- normalising responses so two backends (and two runs) can be compared -------------------------

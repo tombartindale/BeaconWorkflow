@@ -67,7 +67,7 @@ export interface SyncPlanItem {
   module: string; local: string; remote: string; action: 'copy' | 'conflict' | 'one_side' | 'check' | 'failed' | 'in_sync' | string;
   reason: string; bytes: number | null; cloud: boolean;
 }
-export type SyncEnvelope = Omit<BcnSyncEnvelope, 'plan' | 'counts' | 'diagnostics'> & {
+export type SyncEnvelope = Omit<BcnSyncEnvelope, 'plan' | 'counts' | 'diagnostics' | 'ignored' | 'remote' | 'last_pull' | 'last_push' | 'direction' | 'dry_run'> & {
   direction?: 'pull' | 'push'; dry_run?: boolean; remote?: string | null; plan?: SyncPlanItem[];
   counts?: Record<string, number>; ignored?: string[]; last_pull?: string | null; last_push?: string | null;
   diagnostics: Diagnostic[];

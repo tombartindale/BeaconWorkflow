@@ -140,7 +140,7 @@ function correct(d: Diagnostic) {
       <p class="text-grey-7">The partner translates from this SRT, so a mishearing here reaches Mandarin.
         Accept leaves the SRT as it is; Correct changes the delivered subtitle text (timings never change). Run subtitles and package afterwards.</p>
       <template v-for="section in mt" :key="section.title">
-        <q-card v-if="section.empty || section.rows.length" flat bordered class="q-mb-md">
+        <q-card v-if="(mt[0].rows.length || mt[1].rows.length) && (section.empty || section.rows.length)" flat bordered class="q-mb-md">
           <q-card-section class="text-subtitle1 text-weight-medium q-pb-sm">{{ section.title }} ({{ section.rows.length }})</q-card-section>
           <q-list separator>
             <q-item v-for="d in section.rows" :key="d.data!.id" :class="{ 'text-grey-6': d.data?.review }">

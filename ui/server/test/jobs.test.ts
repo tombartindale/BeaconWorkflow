@@ -167,3 +167,17 @@ describe('paths', () => {
     for (const bad of ['..', 'KV7015/../x', '/etc', 'KV7015/U1', 'kv7015']) expect(() => app.targetRel(bad)).toThrow();
   });
 });
+
+describe('shutdown', () => {
+  it('closes promptly with a live event stream open', async () => {
+    const { createServer } = await import('../src/index.js');
+    const server = await createServer({ root, bcn: FAKE, dataDir, port: 0 });
+    const ctrl = new AbortController();
+    const res = await fetch(`${server.url}/api/events`, { signal: ctrl.signal });
+    await res.body!.getReader().read();
+    const t = Date.now();
+    await server.close();
+    expect(Date.now() - t).toBeLessThan(2000);
+    ctrl.abort();
+  });
+});

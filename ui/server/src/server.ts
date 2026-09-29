@@ -71,7 +71,10 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 export interface ServerOptions { app: App; staticDir?: string }
 
 export async function buildServer({ app, staticDir }: ServerOptions): Promise<FastifyInstance> {
-  const f = Fastify({ logger: false, exposeHeadRoutes: true, bodyLimit: UPLOAD_MAX });
+  // Live event streams never finish by themselves, so closing must not wait for them.
+  const f = Fastify({ logger: false, exposeHeadRoutes: true, bodyLimit: UPLOAD_MAX, forceCloseConnections: true });
+  const streams = new Set<import('node:http').ServerResponse>();
+  f.addHook('onClose', async () => { for (const res of streams) res.end(); });
   f.removeAllContentTypeParsers();
   f.addContentTypeParser('*', (_req, payload, done) => done(null, payload));
 
@@ -288,7 +291,8 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
       res.write(`data: ${JSON.stringify(ev)}\n\n`);
     });
     const ping = setInterval(() => res.write(': ping\n\n'), PING_MS);
-    req.raw.on('close', () => { clearInterval(ping); off(); });
+    streams.add(res);
+    req.raw.on('close', () => { clearInterval(ping); off(); streams.delete(res); });
   });
 
   // -- files from the root --------------------------------------------------------------------

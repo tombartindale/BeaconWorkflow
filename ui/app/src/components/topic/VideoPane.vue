@@ -78,6 +78,9 @@ function applySubs() {
   if (!video.value) return;
   for (const tr of Array.from(video.value.textTracks)) tr.mode = tr.language === subs.value ? 'showing' : 'disabled';
 }
+// Read from the event, not the ref: a last event can arrive while the pane is being torn down.
+const onTime = (e: Event) => { time.value = (e.target as HTMLVideoElement).currentTime; };
+const onRate = (e: Event) => { rate.value = (e.target as HTMLVideoElement).playbackRate; };
 function onMeta() {
   const v = video.value!;
   duration.value = v.duration || 0;
@@ -124,8 +127,7 @@ onBeforeUnmount(() => {
     <q-card-section v-else>
       <div class="player-main">
         <video ref="video" :src="src" controls preload="metadata" playsinline
-          @loadedmetadata="onMeta" @timeupdate="time = video!.currentTime" @seeked="time = video!.currentTime"
-          @ratechange="rate = video!.playbackRate">
+          @loadedmetadata="onMeta" @timeupdate="onTime" @seeked="onTime" @ratechange="onRate">
           <track v-for="tr in tracks" :key="tr.src" kind="subtitles" :srclang="tr.lang" :label="tr.label" :src="tr.src">
         </video>
         <div class="current-slide">

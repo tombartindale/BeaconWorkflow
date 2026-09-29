@@ -82,7 +82,10 @@ class StatusCache:
 
 
 def _fingerprint(env: dict[str, Any]) -> str:
-    slim = [(r.get("topic"), r.get("en"), r.get("zh"), r.get("hydration"), r.get("unreviewed_mistranscriptions"))
+    # Artefact times are included so that any new or rebuilt file (a recording script, a draft)
+    # refreshes the views showing it, even when no stage changes.
+    slim = [(r.get("topic"), r.get("en"), r.get("zh"), r.get("hydration"), r.get("unreviewed_mistranscriptions"),
+             [(a.get("key"), a.get("mtime")) for a in r.get("artifacts", [])])
             for r in env.get("results", [])]
     return hashlib.sha1(repr((slim, env.get("diagnostics"))).encode()).hexdigest()
 

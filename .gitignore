@@ -10,3 +10,5 @@ tooling/vendor/
 build/
 out/
 example/translation/exports/
+# The local working copy of the live content: synced with OneDrive, never committed
+working_area/

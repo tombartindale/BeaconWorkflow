@@ -50,7 +50,8 @@ def module_documents(target: Target) -> list[Diagnostic]:
         for u in units:
             act = mdir / u / "activity.md"
             if act.is_file():
-                out.extend(coursemap.validate_doc(act, f"{m}/{u}/activity.md", docs["activity_headings"], cm.outcomes, u))
+                out.extend(coursemap.validate_activity(act, f"{m}/{u}/activity.md", docs["activity_headings"], cm.outcomes,
+                                                       m, u, docs["activity_types"]))
         if target.level in ("root", "module"):
             for a in sorted(mdir.glob("assignment-*.md")):
                 out.extend(coursemap.validate_doc(a, f"{m}/{a.name}", docs["assignment_headings"], cm.outcomes))

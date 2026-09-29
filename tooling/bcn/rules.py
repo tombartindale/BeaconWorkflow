@@ -24,8 +24,14 @@ EN_DATE_PATTERNS = [
     re.compile(rf"\b(?:{_MONTHS})\.?\s+\d{{4}}\b", re.IGNORECASE),
     re.compile(r"\b\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b"),
     re.compile(r"\b\d{4}-\d{2}-\d{2}\b"),
-    re.compile(r"\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b", re.IGNORECASE),
 ]
+EN_WEEKDAY_PATTERN = re.compile(r"\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b", re.IGNORECASE)
+
+# Checks that are a matter of editorial judgement: a person may acknowledge a
+# particular finding (bcn ack) and the pipeline carries on. Structural checks
+# (missing narration, parity, front matter, assets) can never be acknowledged.
+ACKABLE = {"MD_DATE", "MD_FORBIDDEN", "MD_DEICTIC", "MD_WORD_COUNT", "MD_SLIDE_WORDS", "MD_TITLE_LENGTH",
+           "MD_SLIDE_COUNT", "MD_ZH_CHARS", "MD_SLIDE_TITLE_MISSING", "MD_ZH_UNTRANSLATED"}
 ZH_DATE_PATTERNS = [
     re.compile(r"\d{2,4}\s*年\s*\d{1,2}\s*月"),
     re.compile(r"\d{1,2}\s*月\s*\d{1,2}\s*[日号]"),
@@ -56,9 +62,16 @@ class RuleSet:
         return str(p.relative_to(self.topic.dir))
 
     def d(self, code: str, msg: str, line: int | None = None, slide: int | None = None, hint: str | None = None,
-          level: str | None = None, file: str | None = None) -> Diagnostic:
+          level: str | None = None, file: str | None = None, match: str | None = None) -> Diagnostic:
+        data = None
+        if code in ACKABLE:
+            # Identifies the finding by what it is, not where: an acknowledgement follows the
+            # text if lines move, and lapses if the text itself changes.
+            data = {"fingerprint": f"{code}|{self.lang}|s{slide or 0}|{(match or '').lower()}"}
+            if match:
+                data["match"] = match
         return Diagnostic(code, msg, topic=self.topic.id, lang=self.lang, file=file or self.rel, line=line, slide=slide,
-                          hint=hint, level=level)
+                          hint=hint, level=level, data=data)
 
     def locate(self, p: ParsedTopic, s: Slide, rx: re.Pattern[str]) -> int | None:
         for ln in range(s.start_line, s.end_line + 1):
@@ -73,6 +86,34 @@ class RuleSet:
         out += self.structure(p)
         out += self.images(p)
         out += self.text(p)
+        return self._configure(self._dedupe(out))
+
+    @staticmethod
+    def _dedupe(diags: list[Diagnostic]) -> list[Diagnostic]:
+        """One finding per fingerprint: 'Friday' three times on a slide is one thing to decide about."""
+        seen: dict[str, Diagnostic] = {}
+        out = []
+        for d in diags:
+            fp = (d.data or {}).get("fingerprint")
+            if fp and fp in seen:
+                seen[fp].data["occurrences"] = seen[fp].data.get("occurrences", 1) + 1
+                continue
+            if fp:
+                seen[fp] = d
+            out.append(d)
+        return out
+
+    def _configure(self, diags: list[Diagnostic]) -> list[Diagnostic]:
+        """[validate] severity in programme.toml can make a check a warning, info, or switch it off."""
+        sev = self.cfg["validate"].get("severity", {})
+        out = []
+        for d in diags:
+            level = sev.get(d.code)
+            if level == "off":
+                continue
+            if level in ("error", "warn", "info"):
+                d.level = level
+            out.append(d)
         return out
 
     def _tag(self, x: Diagnostic) -> Diagnostic:
@@ -117,7 +158,7 @@ class RuleSet:
                 out.append(self.d("MD_SLIDE_TITLE_MISSING", f"Slide {s.index} has no heading.", s.start_line, s.index))
             elif len(s.title) >= limit:
                 out.append(self.d("MD_TITLE_LENGTH", f"Slide {s.index} title is {len(s.title)} characters; the limit is under {limit}.",
-                                  s.title_line, s.index))
+                                  s.title_line, s.index, match=s.title))
         return out
 
     def title_limit(self) -> int:
@@ -146,7 +187,7 @@ class RuleSet:
         return list(self.cfg["validate"]["forbidden"])
 
     def date_patterns(self) -> list[re.Pattern[str]]:
-        return EN_DATE_PATTERNS
+        return EN_DATE_PATTERNS + ([EN_WEEKDAY_PATTERN] if self.cfg["validate"].get("date_weekdays") else [])
 
     def texts(self, s: Slide) -> list[str]:
         return [s.content]
@@ -160,10 +201,12 @@ class RuleSet:
                     for m in rx.finditer(t):
                         lr = re.compile(re.escape(m.group(0)))
                         out.append(self.d("MD_DATE", f"Slide {s.index} contains a date: '{m.group(0)}'.", self.locate(p, s, lr), s.index,
-                                          hint="Dated material goes stale; remove it or move it out of the recorded content."))
+                                          hint="Dated material goes stale. If this date is deliberate (an example, not a schedule), acknowledge it.",
+                                          match=m.group(0)))
                 for w, rx in forbidden:
                     if rx.search(t):
-                        out.append(self.d("MD_FORBIDDEN", f"Slide {s.index} contains the forbidden string '{w}'.", self.locate(p, s, rx), s.index))
+                        out.append(self.d("MD_FORBIDDEN", f"Slide {s.index} contains the forbidden string '{w}'.", self.locate(p, s, rx), s.index,
+                                          match=w))
         return out
 
 
@@ -212,7 +255,7 @@ class EnglishRules(RuleSet):
             for ph, rx in phrases:
                 if rx.search(s.say_text):
                     out.append(self.d("MD_DEICTIC", f"Slide {s.index} narration says '{ph}', but the presenter is recorded without the slides in shot.",
-                                      self.locate(p, s, rx), s.index, hint="Describe the thing rather than point at it."))
+                                      self.locate(p, s, rx), s.index, hint="Describe the thing rather than point at it.", match=ph))
         return out
 
 
@@ -234,6 +277,18 @@ class MandarinRules(RuleSet):
     def structure(self, p: ParsedTopic) -> list[Diagnostic]:
         out = super().structure(p)
         limit = int(self.cfg["validate_zh"]["slide_chars_max"])
+        # The topic title and slide headings are translated in this file (the SRT only carries
+        # what was spoken), so one with no Chinese at all was almost certainly missed.
+        title = p.front.get("title", "").strip()
+        if title and not CJK_RE.search(title):
+            out.append(self.d("MD_ZH_UNTRANSLATED", f"The topic title '{title}' has no Chinese in it.",
+                              p.front_lines.get("title"), hint="Return it to the translator, or acknowledge it if it is meant to stay as it is.",
+                              match=title))
+        for s in p.slides:
+            if s.title and not CJK_RE.search(s.title):
+                out.append(self.d("MD_ZH_UNTRANSLATED", f"Slide {s.index} heading '{s.title}' has no Chinese in it.",
+                                  s.title_line, s.index, hint="Return it to the translator, or acknowledge it if it is meant to stay as it is.",
+                                  match=s.title))
         for s in p.slides:
             if s.say_blocks:
                 out.append(self.d("MD_SAY_IN_ZH", f"Slide {s.index} has a Say block; Mandarin sources carry no narration.",
@@ -272,11 +327,12 @@ def slide_chars(content: str) -> int:
     return len(re.sub(r"\s+", "", text))
 
 
-def validate_topic(cfg: Config, topic: Topic, lang: str) -> tuple[ParsedTopic | None, list[Diagnostic]]:
+def validate_topic(cfg: Config, topic: Topic, lang: str, text: str | None = None) -> tuple[ParsedTopic | None, list[Diagnostic]]:
+    """Validate the topic's source, or `text` in its place (an unsaved edit)."""
     rules = RULESETS[lang](cfg, topic)
     src = topic.src(lang)
     rel = src.name
-    if not src.is_file():
+    if text is None and not src.is_file():
         return None, [Diagnostic("FS_MISSING", f"{rel} does not exist.", topic=topic.id, lang=lang, file=rel)]
     diags: list[Diagnostic] = []
     if lang != "en":
@@ -287,9 +343,24 @@ def validate_topic(cfg: Config, topic: Topic, lang: str) -> tuple[ParsedTopic | 
             return None, [Diagnostic("FS_MISSING", "topic.md does not exist; Mandarin cannot be checked for parity.",
                                      topic=topic.id, lang=lang, file="topic.md")]
         en = parse(en_src, "topic.md", topic.id)
-        p = parse(src, rel, topic.id)
+        p = parse(src, rel, topic.id, text=text)
         diags += rules.parity(p, en)  # type: ignore[attr-defined]
     else:
-        p = parse(src, rel, topic.id)
+        p = parse(src, rel, topic.id, text=text)
     diags += rules.check(p)
-    return p, diags
+    return p, apply_acknowledgements(topic, diags)
+
+
+def apply_acknowledgements(topic: Topic, diags: list[Diagnostic]) -> list[Diagnostic]:
+    """Findings a person has acknowledged (in review.json) become info and stop blocking."""
+    from . import reviewfile
+    acks = reviewfile.load(topic).get("acknowledged", {}) if topic.review_file.is_file() else {}
+    if not acks:
+        return diags
+    for d in diags:
+        fp = (d.data or {}).get("fingerprint")
+        if fp and fp in acks and d.code in ACKABLE:
+            d.level = "info"
+            d.data["acknowledged"] = acks[fp]
+            d.hint = None
+    return diags

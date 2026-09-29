@@ -29,7 +29,7 @@ Run the tests with `cd tooling && .venv/bin/python -m pytest`.
 ## bcn
 
 ```
-bcn validate|render|cues|subtitles|compose|package|qa|status <path> [--lang en|zh] [--human] [--quiet] [--force] [--theme NAME] [--jobs N]
+bcn validate|render|script|bumpers|cues|subtitles|compose|package|qa|status <path> [--lang en|zh] [--human] [--quiet] [--force] [--theme NAME] [--jobs N]
 bcn show|diagnostics|review|intake|translation <path> ...   # used by the UI; see --help
 bcn schema <tool> | bcn codes | bcn doctor
 ```
@@ -64,7 +64,7 @@ Exit codes are 0 OK, 1 validation, 2 usage, 3 missing input, 4 tool failure, and
 | `edit/master.mp4`, `edit/master.srt`, `edit/master.zh.srt` | From the editor; the Mandarin SRT comes from the translator |
 | `review.json` | Human decisions: hand-placed cues and mis-transcription rulings. It is content, so it lives outside `build/`. |
 | `translation.json` | Record of exports, which drives the Mandarin "out for translation" stage |
-| `build/` | Step results, `slides/{en,zh}/`, `deck.{en,zh}.pdf`, `<id>.cues.csv`, `cues-report.json`, `subtitles/`, `draft.mp4` |
+| `build/` | Step results, `slides/{en,zh}/`, `deck.{en,zh}.pdf`, `<id>.cues.csv`, `cues-report.json`, `subtitles/`, `bumpers/`, `draft.mp4` |
 | `out/` | The delivery package, with `manifest.json` (and `manifest.zh.json`) |
 
 **Freshness is judged by modification time.** Copy trees with `cp -Rp` or `rsync -a`. A plain `cp -R` makes everything look stale.
@@ -88,6 +88,55 @@ Exit codes are 0 OK, 1 validation, 2 usage, 3 missing input, 4 tool failure, and
 `assets.md` is a table with `Asset`, `Topic` and `Status` columns. Any status other than delivered, done, received, complete or closed counts as outstanding and blocks the listed topics.
 
 `activity.md` and `assignment-*.md` are checked for their required headings and for `LOn` references the course map can resolve. The required headings are configurable in `programme.toml` under `[documents]`.
+
+### Editing scripts
+
+**Edit** on a topic's Script pane, or **edit line N** next to any script problem, opens the script in an editor. Problems are checked as you type and listed beside it; click one to jump to its line. ⌘S saves. Saving goes through `bcn edit`, which:
+
+- refuses to overwrite if the file changed on disk after the editor opened it, e.g. through a OneDrive pull; you can then overwrite deliberately or reload
+- keeps the replaced version in the topic's `.history/` folder (the last 30), which is not synced
+- validates straight away, so the stage and problems update
+
+Unsaved edits survive leaving the page in the same browser tab.
+
+### Recording script
+
+`bcn script <topic|unit|module>`, or **Recording script** on a topic page, writes the narration alone for the presenter:
+
+- `build/script.en.pdf`: large print, one block per slide with a divider, page numbers.
+- `build/script.en.html` and `build/script.en.txt`: the same words for a teleprompter.
+
+It needs only `topic.md`, not a passing validate.
+
+**Teleprompter.** The **Teleprompter** button on a topic page opens the narration full screen in a new tab. It runs in the browser, so nothing needs installing, and it always shows the current script. Space plays and pauses, with a 3-2-1 countdown from the top. ↑/↓ change the speed (5 is about 145 words a minute). +/− change the text size. ←/→ or PageUp/PageDown jump between slides, which is what most presentation clickers send. M mirrors the text for a beam-splitter rig, F goes full screen, and Esc leaves. The text scrolls past a reading line a third of the way down, and settings are remembered in that browser.
+
+For a separate teleprompter app we suggest [QPrompt](https://qprompt.app/), which is free and open source (GPLv3) with a signed macOS build: open or paste the `.html` file into it. The slide headings show where each slide starts.
+
+### Intro and outro
+
+`bcn bumpers <topic|unit|module> [--lang zh]`, **Intro/outro** on a topic page, or **bumpers** in a module's bulk actions, makes each topic's title card and turns it into two videos:
+
+- `build/bumpers/<id>.card.<lang>.png`: the topic title from that language's front matter, under the logo, at the theme's slide resolution. A long title wraps and shrinks to fit.
+- `build/bumpers/<id>.intro.<lang>.mp4` and `<id>.outro.<lang>.mp4`: the card faded from and to black, with a silent stereo track, at the size and frame rate in `[delivery]`.
+
+The look is part of the theme, under `[bumper]` in `theme.toml`: logo file, colours, durations and fade. The logo sits in the theme directory. Until one is set, every run warns `BUMPER_NO_LOGO`.
+
+Once a topic has bumpers, `compose` wraps the draft in them in place of the programme-wide `[bumpers]` files, and `package` delivers them as separate files beside the master. Neither the master nor the cue sheet is changed. If the title changes, the bumpers go stale: compose skips them, and package refuses to run until `bcn bumpers` is run again.
+
+### Overriding a check
+
+Editorial checks (dates, forbidden words, deictic phrases, word counts, slide count, title length) can be overridden two ways. Structural checks (narration blocks, front matter, assets, Mandarin parity) cannot.
+
+- **One finding at a time:** **Acknowledge** on the topic or Diagnostics page, or `bcn ack <topic> --fingerprint FP --note "why"`. The decision is stored in the topic's `review.json` with who, when and why, and the finding becomes info, so validation passes. It is tied to the finding's text, so if the script changes and the text goes, it lapses and anything new is flagged again. **Undo**, or `--clear`, withdraws it.
+- **For the whole programme:** set a check's level in `programme.toml`. Warnings never block.
+
+  ```toml
+  [validate]
+  date_weekdays = false        # default: "Friday" is not treated as a date
+
+  [validate.severity]
+  MD_DATE = "warn"             # "error", "warn", "info" or "off"
+  ```
 
 ### Themes
 
@@ -114,6 +163,35 @@ Confidence per boundary drops for:
 Divergences are classified as cut, mis-transcription (short and phonetically close), paraphrase, or insertion. Nearby fragments are merged, so a reworded sentence counts as one paraphrase.
 
 The defaults are strict: `min_confidence = 0.8`, `max_divergence = 0.10`. A low-confidence boundary still gets a best-guess `cues.csv`, so the draft can be composed and watched, but the step fails until a person resolves it.
+
+## Starting it for real
+
+```sh
+./start.sh           # checks tools, shows what is waiting in OneDrive, starts the UI and opens it
+./start.sh --pull    # the same, pulling from OneDrive first
+```
+
+The local working copy is `working_area/` in this folder. It is created and filled from the live OneDrive folder on the first run. `BEACON_REMOTE`, `BEACON_ROOT` and `BEACON_PORT` override the defaults.
+
+## Syncing with OneDrive
+
+The pipeline runs on a **local working copy**. The shared OneDrive folder is where content arrives and where other people look, and `bcn sync` moves files between the two on request, never automatically. The UI's **Sync** page does the same thing with buttons.
+
+```sh
+# First time: create a local root that points at the shared folder, and pull into it.
+bcn sync working_area --pull --init --remote "~/Library/CloudStorage/OneDrive-…/BEACON Content Production - General/Module Development"
+
+bcn sync working_area --pull --dry-run     # what would come in (never downloads)
+bcn sync working_area --pull
+bcn sync working_area --push               # local script edits, review decisions, finished packages
+```
+
+- **Names:** the team's flat names (`KV7016/KV7016-U01-T01.md`) map to the pipeline layout (`KV7016/U01/T01/topic.md`). The nested layout is recognised too. Files that map to nothing, such as the Word module specs, are listed and left alone. The full mapping is at the top of [tooling/bcn/sync.py](tooling/bcn/sync.py).
+- **What goes where:** pull brings scripts, Mandarin scripts, course maps, activities, asset requests, assignments, reading lists, assets, review decisions, and the editor's `<id>.mp4` / `<id>.srt` / `<id>.zh.srt`. Push sends the same text files back, never the media, plus finished packages into `<module>/delivery/<id>/`.
+- **Conflicts:** `sync-state.json` in the local root records each file as it was at the last sync. A file changed on only one side is copied. A file changed on both sides is a conflict and nothing is overwritten until you choose (`--prefer remote|local --only <path>`, or the buttons on the Sync page).
+- **Deletions never sync.** A file on one side only is reported, not removed.
+- **Pulled files get the current time** as their modification time, so anything built from an older version shows as stale.
+- **Downloads:** only a real pull downloads cloud-only files, and only the ones it needs. A dry run never does.
 
 ## Beacon UI
 

@@ -3,7 +3,7 @@
 // where the scope is visible, and say what they will do before they run.
 import { confirmModal, h, mount, pips, runJob, STAGE_LABEL, store, subscribe, topicPath } from '../core.js';
 
-const BULK = ['validate', 'render', 'cues', 'compose', 'package'];
+const BULK = ['validate', 'render', 'script', 'bumpers', 'cues', 'compose', 'package'];
 
 export function moduleView(main, module) {
   const state = {
@@ -73,7 +73,7 @@ export function moduleView(main, module) {
     if (!ids.size) return;
     const targets = targetsFor(ids, rows);
     const langName = state.lang === 'zh' ? 'Mandarin' : 'English';
-    const lang = command === 'cues' ? 'en' : state.lang;
+    const lang = ['cues', 'script'].includes(command) ? 'en' : state.lang;  // English only
     const body = h('div', {},
       h('p', {}, `This runs `, h('strong', {}, `bcn ${command}${lang === 'zh' ? ' --lang zh' : ''}${state.force ? ' --force' : ''}`),
         ` on ${ids.size} topic${ids.size === 1 ? '' : 's'} (${command === 'cues' ? 'English; Mandarin inherits cues' : langName}), as ${targets.length} invocation${targets.length === 1 ? '' : 's'}:`),
@@ -84,6 +84,19 @@ export function moduleView(main, module) {
     const args = { lang };
     if (state.force) args.force = true;
     await runJob(command, targets, args);
+  }
+
+  function docsPanel(m) {
+    const docs = m.documents || [];
+    if (!docs.length) return null;
+    const shown = docs.filter(d => d.exists || d.path.endsWith('course-map.md') || d.path.endsWith('/activity.md'));
+    return h('div', { class: 'panel', style: { marginBottom: '16px' } },
+      h('div', { class: 'panel-head' }, h('h2', {}, 'Module documents'),
+        m.errors ? h('span', { class: 'chip error' }, `${m.errors} error${m.errors === 1 ? '' : 's'}`) : h('span', { class: 'chip ok' }, 'no problems')),
+      h('div', { class: 'actions docs-list' }, shown.map(d => d.exists
+        ? h('a', { class: 'btn small', href: `#/doc/${d.path}` }, d.path.slice(module.length + 1),
+            d.errors ? h('span', { class: 'chip error' }, d.errors) : d.warnings ? h('span', { class: 'chip warn' }, d.warnings) : null)
+        : h('span', { class: 'btn small missing', title: 'Not in the working copy yet' }, `${d.path.slice(module.length + 1)} — missing`))));
   }
 
   const render = () => {
@@ -139,6 +152,7 @@ export function moduleView(main, module) {
           m.stale ? h('span', { class: 'chip stale' }, `${m.stale} stale`) : null,
           m.cloud ? h('span', { class: 'chip cloud' }, `☁ ${m.cloud} cloud-only`) : null,
           h('button', { class: 'btn', onclick: () => runJob('qa', [module], {}) }, 'Run QA on module'))),
+      docsPanel(m),
       h('div', { class: 'panel' }, filters, bulkbar, h('div', { class: 'gridwrap panel-body' }, table)),
       h('p', { class: 'muted small' },
         'Each cell: English on the left, Mandarin on the right. Filled pips show how far the topic has got. ',

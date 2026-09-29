@@ -64,5 +64,5 @@ def make_video(path: Path, seconds: float) -> None:
         pytest.skip("ffmpeg not installed")
     path.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i", f"color=c=gray:s=64x36:r=5:d={seconds}",
-                    "-f", "lavfi", "-i", f"anullsrc=r=8000:cl=mono", "-t", str(seconds), "-c:v", "libx264", "-preset",
+                    "-f", "lavfi", "-i", "anullsrc=r=8000:cl=mono", "-t", str(seconds), "-c:v", "libx264", "-preset",
                     "ultrafast", "-c:a", "aac", "-shortest", str(path)], check=True)

@@ -7,6 +7,7 @@ Host or Origin header are refused so a web page elsewhere cannot drive it.
 from __future__ import annotations
 
 import datetime as _dt
+import hashlib
 import json
 import mimetypes
 import os
@@ -136,6 +137,10 @@ def job_label(command: str, targets: list[str], args: dict[str, Any]) -> str:
         what = f"cues: set slide {args['set']}"
     if command == "review":
         what = "review: " + ("accept" if args.get("accept") else "correct" if args.get("correct") else "clear")
+    if command == "ack":
+        what = "withdraw acknowledgement" if args.get("clear") else "acknowledge " + str(args.get("fingerprint", "")).split("|")[0]
+    if command == "sync":
+        what = ("pull from OneDrive" if args.get("pull") else "push to OneDrive") + (" (keep chosen version)" if args.get("prefer") else "")
     if command == "translation":
         what = "translation export" if args.get("export") else "translation import"
     scope = targets[0] if len(targets) == 1 else f"{len(targets)} targets"
@@ -253,6 +258,10 @@ class Handler(BaseHTTPRequestHandler):
             vtt = "WEBVTT\n\n" + re.sub(r"(\d{2}:\d{2}:\d{2}),(\d{3})", r"\1.\2", text)
             self._send(200, vtt.encode(), "text/vtt; charset=utf-8")
             return
+        if q.get("view") and p.suffix in (".md", ".txt", ".json", ".toml", ".csv", ".srt", ".vtt"):
+            # For the in-app document viewer: always text, never a download.
+            self._send(200, p.read_bytes(), "text/plain; charset=utf-8")
+            return
         size = p.stat().st_size
         ctype = mimetypes.guess_type(p.name)[0] or "application/octet-stream"
         extra = {"Accept-Ranges": "bytes"}
@@ -335,9 +344,63 @@ class Handler(BaseHTTPRequestHandler):
         row = next((r for r in env.get("results", []) if r.get("topic") == topic_id), None)
         self.json({"show": show, "status": row})
 
+    # -- script editing: bcn edit does the writing and checking; this only moves text --------
+    def _edit_text_file(self, text: str) -> Path:
+        d = self.app.data_dir / "edits"
+        d.mkdir(parents=True, exist_ok=True)
+        for old in sorted(d.glob("*.md"))[:-50]:
+            old.unlink(missing_ok=True)
+        f = d / f"{_dt.datetime.now().strftime('%Y%m%d-%H%M%S-%f')}.md"
+        f.write_text(text, encoding="utf-8")
+        return f
+
+    def topic_source(self, topic_id: str) -> None:
+        rel = self.app.target_rel(topic_id)
+        lang = self.query_args().get("lang", "en")
+        if lang not in ("en", "zh"):
+            raise ValueError("lang must be en or zh")
+        p = self.app.root / rel / ("topic.md" if lang == "en" else "topic.zh.md")
+        if not p.is_file():
+            self.json({"exists": False, "text": "", "sha256": None, "path": str(p.relative_to(self.app.root))})
+            return
+        data = p.read_bytes()
+        self.json({"exists": True, "text": data.decode("utf-8-sig"), "sha256": hashlib.sha256(data).hexdigest(),
+                   "path": str(p.relative_to(self.app.root))})
+
+    def topic_check(self, topic_id: str) -> None:
+        """Validate unsaved text (bcn edit --dry-run). Read-only, so it runs directly rather than as a job."""
+        rel = self.app.target_rel(topic_id)
+        data = self.body_json()
+        lang = "zh" if data.get("lang") == "zh" else "en"
+        f = self._edit_text_file(str(data.get("text", "")))
+        try:
+            env = self.app.bcn.query("edit", str(self.app.root / rel), "--from", str(f), "--lang", lang, "--dry-run", timeout=60)
+        finally:
+            f.unlink(missing_ok=True)
+        self.json(env)
+
+    def topic_save(self, topic_id: str) -> None:
+        rel = self.app.target_rel(topic_id)
+        data = self.body_json()
+        lang = "zh" if data.get("lang") == "zh" else "en"
+        f = self._edit_text_file(str(data.get("text", "")))
+        args = {"from": str(f), "lang": lang}
+        if data.get("expect_sha") and not data.get("overwrite"):
+            args["expect_sha"] = str(data["expect_sha"])
+        j = self.app.jobs.submit("edit", [rel], args, f"edit {'topic.zh.md' if lang == 'zh' else 'topic.md'} · {rel}",
+                                 self.app.operator())
+        self.json(j.summary(), 202)
+
     def diagnostics(self) -> None:
         rel = self.app.target_rel(self.query_args().get("path", "."))
         self.json(self.app.cached_query(("diagnostics", rel), 10, "diagnostics", str(self.app.root / rel)))
+
+    def sync_preview(self) -> None:
+        """Both directions as dry runs. They only stat files, so no cloud download is triggered."""
+        a = self.app
+        pull = a.cached_query(("sync", "pull"), 20, "sync", str(a.root), "--pull", "--dry-run")
+        push = a.cached_query(("sync", "push"), 20, "sync", str(a.root), "--push", "--dry-run")
+        self.json({"pull": pull, "push": push})
 
     def review(self) -> None:
         rel = self.app.target_rel(self.query_args().get("path", "."))
@@ -360,7 +423,7 @@ class Handler(BaseHTTPRequestHandler):
         for k in ("from", "import", "by"):
             args.pop(k, None)  # server-supplied only
         targets = [self.app.target_rel(str(t)) for t in data.get("targets") or []]
-        if command in ("review",) or (command == "cues" and (args.get("set") or args.get("unset"))):
+        if command in ("review", "ack") or (command == "cues" and (args.get("set") or args.get("unset"))):
             args["by"] = self.app.operator() or "ui"
         j = self.app.jobs.submit(command, targets, args, job_label(command, targets, args), self.app.operator())
         self.json(j.summary(), 202)
@@ -485,8 +548,12 @@ ROUTES = [
     ("GET", re.compile(r"^/api/status$"), Handler.get_status),
     ("POST", re.compile(r"^/api/status/refresh$"), Handler.refresh_status),
     ("GET", re.compile(r"^/api/topic/([A-Z]{2}\d{4}-U\d{2}-T\d{2})$"), Handler.topic),
+    ("GET", re.compile(r"^/api/topic/([A-Z]{2}\d{4}-U\d{2}-T\d{2})/source$"), Handler.topic_source),
+    ("POST", re.compile(r"^/api/topic/([A-Z]{2}\d{4}-U\d{2}-T\d{2})/check$"), Handler.topic_check),
+    ("POST", re.compile(r"^/api/topic/([A-Z]{2}\d{4}-U\d{2}-T\d{2})/save$"), Handler.topic_save),
     ("GET", re.compile(r"^/api/diagnostics$"), Handler.diagnostics),
     ("GET", re.compile(r"^/api/review$"), Handler.review),
+    ("GET", re.compile(r"^/api/sync$"), Handler.sync_preview),
     ("GET", re.compile(r"^/api/jobs$"), Handler.list_jobs),
     ("POST", re.compile(r"^/api/jobs$"), Handler.create_job),
     ("GET", re.compile(r"^/api/jobs/(\d+)$"), Handler.get_job),

@@ -31,7 +31,7 @@ NOISE = [
 ]
 
 TOPIC_FILES = {"topic.md", "topic.zh.md", "review.json", "translation.json"}
-TOPIC_DIRS = {"assets", "edit", "build", "out"}
+TOPIC_DIRS = {"assets", "edit", "build", "out", ".history"}
 EDIT_FILES = {"master.mp4", "master.srt", "master.zh.srt"}
 _CONFLICT_SEP = r"[-_ (]"
 
@@ -145,6 +145,14 @@ class Topic:
 
     def draft(self, lang: str = "en") -> Path:
         return self.build / ("draft.mp4" if lang == "en" else f"draft.{lang}.mp4")
+
+    def bumper_card(self, kind: str, lang: str = "en") -> Path:
+        """The still behind a bumper: 'intro' is the topic title, 'outro' the logo."""
+        return self.build / "bumpers" / f"{self.id}.{kind}-card.{lang}.png"
+
+    def bumper(self, kind: str, lang: str = "en") -> Path:
+        """kind is "intro" or "outro"."""
+        return self.build / "bumpers" / f"{self.id}.{kind}.{lang}.mp4"
 
     @property
     def review_file(self) -> Path:

@@ -86,7 +86,8 @@ def _export(env: Envelope, target: Target) -> None:
                 files.append({"topic": t.id, "name": f.name, "bytes": f.stat().st_size, "sha256": sha256_file(f)})
         manifest = {
             "batch": batch, "created": utcnow(), "topics": [t.id for t, _ in ready], "files": files,
-            "return": "For each topic return <topic_id>.zh.md (same slides, same breaks, lang: zh, no Say blocks) "
+            "return": "For each topic return <topic_id>.zh.md (same slides, same breaks, lang: zh, no Say blocks, "
+                      "with the title: line and every slide heading translated) "
                       "and <topic_id>.zh.srt (same cue count, identical timings, translated text).",
         }
         fsutil.write_json(work / "manifest.json", manifest)
@@ -196,7 +197,8 @@ def _import(env: Envelope, target: Target, source: str, args: argparse.Namespace
     env.extra["return_to_translator"] = [
         {"topic": d.topic, "code": d.code, "message": d.message}
         for r in results.values() for d in r.diagnostics
-        if d.level == "error" and d.code in ("MD_PARITY_COUNT", "MD_PARITY_BREAK", "MD_SAY_IN_ZH", "SRT_ZH_CUE_COUNT", "SRT_ZH_TIMING", "FS_MISSING")
+        if d.level == "error" and d.code in ("MD_PARITY_COUNT", "MD_PARITY_BREAK", "MD_SAY_IN_ZH", "MD_ZH_UNTRANSLATED",
+                                             "SRT_ZH_CUE_COUNT", "SRT_ZH_TIMING", "FS_MISSING")
     ]
 
 

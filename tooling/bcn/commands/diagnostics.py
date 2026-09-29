@@ -13,6 +13,7 @@ from .. import fsutil, reviewfile
 from ..envelope import Diagnostic, Envelope
 from ..state import TopicState, all_topics, module_context
 from ..tree import Target
+from . import validate as validate_cmd
 
 HELP = "every outstanding diagnostic beneath the path"
 
@@ -33,9 +34,12 @@ def run(args: argparse.Namespace, env: Envelope, target: Target) -> None:
     order = {"error": 0, "warn": 1, "info": 2}
     floor = order[args.level]
     out: list[Diagnostic] = list(target.diagnostics)
+    # Module documents (course map, activities, assignments) are checked afresh every time:
+    # they are small, and a problem in them must be visible without running validate first.
+    for d in validate_cmd.module_documents(target):
+        d.data = {**(d.data or {}), "step": "validate", "document": True}
+        out.append(d)
     for m in target.modules if target.level in ("root", "module") else []:
-        mv = fsutil.read_json(target.root / m / "build" / "validate.json") or {}
-        out += [_diag(d, "validate") for d in mv.get("diagnostics", [])]
         qa = fsutil.read_json(target.root / m / "build" / "qa.json") or {}
         out += [_diag(d, "qa") for d in qa.get("diagnostics", []) if d.get("code", "").startswith("QA_") and not d.get("topic")]
     for t in all_topics(target.root, target.modules, target.topics, target.level, target.rel):

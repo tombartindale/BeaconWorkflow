@@ -41,6 +41,7 @@ def _slides(t: Topic, lang: str, prefix: str, cfg: Any) -> dict[str, Any] | None
             "line": s.start_line,
             "content_html": to_html(s.content, base),
             "narration": s.say_text,
+            "paragraphs": s.say_paragraphs or ([s.say_text] if s.say_text else []),
             "words": words,
             "running_words": running,
             "words_ok": (v["narration_min_words"] <= words <= v["narration_max_words"]) if lang == "en" else None,

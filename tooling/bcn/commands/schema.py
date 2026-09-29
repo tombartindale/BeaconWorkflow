@@ -76,6 +76,15 @@ RESULT_EXTRAS: dict[str, dict[str, Any]] = {
     "translation": {"batch": {"type": "string"}, "files": {"type": "object"}, "validate_ok": {"type": "boolean"},
                     "subtitles_ok": {"type": "boolean"}},
     "doctor": {"pinned": {"type": "string"}, "found": {"type": "string"}, "path": _str_or_null},
+    "sync": {"copied": {"type": "integer"}, "to_copy": {"type": "integer"}, "conflict": {"type": "integer"},
+             "one_side": {"type": "integer"}, "in_sync": {"type": "integer"}, "check": {"type": "integer"}},
+    "ack": {"slides": {"type": "integer"}, "words": {"type": "integer"}, "target_words": {"type": "integer"}},
+    "script": {"slides": {"type": "integer"}, "words": {"type": "integer"}, "pdf": {"type": "string"}},
+    "bumpers": {"title": {"type": "string"}, "logo": {"type": "boolean"}, "font_size": {"type": "integer"},
+                "intro_seconds": {"type": "number"}, "outro_seconds": {"type": "number"},
+                "resolution": {"type": "array"}, "fps": {"type": "number"}},
+    "edit": {"slides": {"type": "integer"}, "words": {"type": "integer"}, "target_words": {"type": ["integer", "null"]},
+             "written": {"type": "boolean"}, "sha256": {"type": ["string", "null"]}, "current_sha256": {"type": "string"}},
     "diagnostics": {}, "codes": {}, "schema": {},
 }
 
@@ -88,6 +97,11 @@ TOP_EXTRAS: dict[str, dict[str, Any]] = {
     "translation": {"batch": {"type": "string"}, "folder": {"type": "string"}, "zip": {"type": "string"},
                     "return_to_translator": {"type": "array"}},
     "qa": {"unit_minutes": {"type": "object"}},
+    "ack": {"acknowledged": {"type": "object"}},
+    "edit": {"validation_ok": {"type": "boolean"}, "counts": {"type": "object"}, "diagnostics_are_validation": {"type": "boolean"}},
+    "sync": {"direction": {"enum": ["pull", "push"]}, "dry_run": {"type": "boolean"}, "remote": {"type": "string"},
+             "counts": {"type": "object"}, "plan": {"type": "array"}, "ignored": {"type": "array"},
+             "last_pull": _str_or_null, "last_push": _str_or_null},
 }
 
 

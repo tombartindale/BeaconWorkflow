@@ -2,7 +2,8 @@
 
 English builds out/ afresh in a sibling temp directory and swaps it in whole, so
 a half-built package never looks complete. Mandarin adds its files beside the
-English and writes its own manifest.zh.json.
+English and writes its own manifest.zh.json. A topic's intro and outro from bcn
+bumpers, if it has them, go in as separate files: the master is never changed.
 """
 
 from __future__ import annotations
@@ -66,8 +67,9 @@ def package_en(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
     subs = [t.subtitle_out("en", "srt")] + ([t.subtitle_out("en", "vtt")] if fmt in ("vtt", "both") else [])
     for s in subs:
         require_input(t, s, "en", step_hint="bcn subtitles")
+    bumpers = _bumpers(t, "en")
 
-    inputs = [src, t.video, t.srt("en"), t.cues_csv, *pngs, *subs, t.root / "programme.toml"]
+    inputs = [src, t.video, t.srt("en"), t.cues_csv, *pngs, *subs, *bumpers, t.root / "programme.toml"]
     if try_skip(t, r, "package", "en", [t.manifest("en")], inputs, force):
         return
 
@@ -94,7 +96,7 @@ def package_en(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
         tp.update(85, "copying slides")
         for i, png in enumerate(pngs, 1):
             shutil.copyfile(png, staging / t.slide_name(i, "en"))
-        for s in subs:
+        for s in [*subs, *bumpers]:
             shutil.copyfile(s, staging / s.name)
         shutil.copyfile(t.cues_csv, staging / t.cues_csv.name)
         (staging / f"{t.id}.md").write_text(p.stripped_file(), encoding="utf-8")
@@ -145,7 +147,15 @@ def package_en(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
 
 
 def _is_zh(name: str, t: Topic) -> bool:
-    return name.startswith(f"{t.id}-zh-") or name.endswith(".zh.srt") or name.endswith(".zh.vtt") or name.endswith(".zh.md")
+    return name.startswith(f"{t.id}-zh-") or name.endswith((".zh.srt", ".zh.vtt", ".zh.md", ".zh.mp4"))
+
+
+def _bumpers(t: Topic, lang: str) -> list[Path]:
+    """The topic's intro and outro, if bcn bumpers has made them; they must be current to be delivered."""
+    found = [p for p in (t.bumper("intro", lang), t.bumper("outro", lang)) if p.is_file()]
+    if found:
+        require_step(t, "bumpers", lang, [t.src(lang)], f"bcn bumpers{' --lang ' + lang if lang != 'en' else ''}")
+    return found
 
 
 def package_zh(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: bool) -> None:
@@ -164,7 +174,8 @@ def package_zh(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
         raise Fail("PKG_COUNT_MISMATCH", f"Mandarin slide images: {len(pngs)}, Mandarin slides: {n}, English slides: {en_manifest['slide_count']}.")
     fmt = cfg["subtitles"]["format"]
     subs = [t.subtitle_out("zh", "srt")] + ([t.subtitle_out("zh", "vtt")] if fmt in ("vtt", "both") else [])
-    inputs = [src, t.srt("zh"), *pngs, *subs, t.manifest("en")]
+    bumpers = _bumpers(t, "zh")
+    inputs = [src, t.srt("zh"), *pngs, *subs, *bumpers, t.manifest("en")]
     if try_skip(t, r, "package", "zh", [t.manifest("zh")], inputs, force):
         return
     written = []
@@ -173,7 +184,7 @@ def package_zh(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, force: 
         with fsutil.atomic_path(dest) as tmp:
             shutil.copyfile(png, tmp)
         written.append(dest)
-    for s in subs:
+    for s in [*subs, *bumpers]:
         dest = t.out / s.name
         with fsutil.atomic_path(dest) as tmp:
             shutil.copyfile(s, tmp)

@@ -228,3 +228,28 @@ export function renderBanners() {
 }
 
 export function levelChip(level) { return h('span', { class: `chip ${level}` }, level); }
+
+// Acknowledge a validation finding as deliberate (bcn ack), or withdraw it.
+// Returns null for findings that cannot be acknowledged.
+export function ackControls(d) {
+  const fp = d.data?.fingerprint;
+  if (!fp || !d.topic) return null;
+  const path = topicPath(d.topic);
+  const ack = d.data.acknowledged;
+  if (ack) {
+    return h('div', { class: 'ack' },
+      h('span', { class: 'chip ok' }, 'acknowledged'),
+      h('span', { class: 'muted small' }, ` by ${ack.by || '?'} ${fmtAgo(ack.at)}${ack.note ? ': “' + ack.note + '”' : ''} `),
+      h('button', { class: 'btn small', onclick: () => runJob('ack', [path], { fingerprint: fp, clear: true }) }, 'undo'));
+  }
+  return h('div', { class: 'ack' }, h('button', { class: 'btn small', title: 'Mark this finding as deliberate so it stops blocking',
+    onclick: async () => {
+      const note = h('input', { type: 'text', placeholder: 'Why is this fine? e.g. a conceptual example, not a schedule', style: { width: '100%' } });
+      const body = h('div', {}, h('p', {}, d.message),
+        h('p', {}, 'It will be recorded in the topic\'s review.json with your name, and stop blocking. If the text changes, it will be flagged again.'),
+        note);
+      setTimeout(() => note.focus(), 50);
+      if (await confirmModal('Acknowledge this finding?', body, 'Acknowledge'))
+        runJob('ack', [path], { fingerprint: fp, ...(note.value.trim() ? { note: note.value.trim() } : {}) });
+    } }, 'Acknowledge'));
+}

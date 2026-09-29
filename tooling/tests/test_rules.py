@@ -59,8 +59,13 @@ def test_wrong_case_asset(tree):
     assert "FS_WRONG_CASE" in errs or "MD_ASSET_MISSING" in errs
 
 
+def zh_md(**kw):
+    """A properly translated Mandarin file: Chinese title and headings."""
+    return topic_md(lang="zh", say=False, title="一个主题", **kw).replace("Slide", "第").replace(" heading", "张")
+
+
 def test_mandarin_parity_and_no_narration(tree):
-    write(tree, topic_md(lang="zh", say=False), "topic.zh.md")
+    write(tree, zh_md(), "topic.zh.md")
     errs, _ = run(tree, "zh")
     assert errs == []
     write(tree, topic_md(lang="zh", say=False, slides=5), "topic.zh.md")
@@ -79,3 +84,55 @@ def test_mandarin_skips_english_checks(tree):
 def test_chinese_dates(tree):
     write(tree, topic_md(lang="zh", say=False).replace("- Point one", "- 2026年10月2日截止", 1), "topic.zh.md")
     assert "MD_DATE" in run(tree, "zh")[0]
+
+
+TEAM_MAP = """# KV7016 — Course map
+
+## Unit 1 — How AI depends on data
+
+**Overview.** Prose the parser should ignore.
+
+| Topic | Title | Minutes | Outcomes |
+| --- | --- | --- | --- |
+| U01-T01 | What an AI model does | 12 | LO2 |
+| U01-T02 | How a model is trained | 12 | LO2, LO9 |
+
+## Outcome coverage
+
+| Outcome | Covered by |
+| --- | --- |
+| LO1 Role of data | U01-T01 |
+| LO2 Data quality | U01-T01 to T02 |
+"""
+
+
+def test_team_course_map_format(tmp_path):
+    from bcn.coursemap import load_course_map
+    d = tmp_path / "KV7016"
+    d.mkdir()
+    (d / "course-map.md").write_text(TEAM_MAP)
+    cm = load_course_map(d)
+    assert cm.units == {"U01": "How AI depends on data"}
+    assert [(t.unit, t.code, t.minutes, t.outcomes) for t in cm.topics] == [("U01", "T01", 12, ["LO2"]), ("U01", "T02", 12, ["LO2", "LO9"])]
+    assert sorted(cm.outcomes) == ["LO1", "LO2"]
+    assert [x.code for x in cm.diagnostics] == ["DOC_OUTCOME_UNKNOWN"]  # LO9 is cited but not listed
+
+
+def test_activity_front_matter(tmp_path):
+    from bcn.coursemap import validate_activity
+    f = tmp_path / "activity.md"
+    f.write_text("---\nunit: KV7016-U02\ntype: poll\nlang: en\n---\n\n# Unit 1 — Check\n")
+    codes = [d.message for d in validate_activity(f, "KV7016/U01/activity.md", [], {"LO1": ""}, "KV7016", "U01", ["quiz", "task"])]
+    assert len(codes) == 2 and "KV7016-U02" in codes[0] and "poll" in codes[1]
+
+
+def test_mandarin_untranslated_title_and_headings(tree):
+    zh = topic_md(lang="zh", say=False, title="A topic title")
+    zh = zh.replace("# Slide 2 heading", "# 第二张").replace("# Slide 3 heading", "# PICO 框架")
+    write(tree, zh, "topic.zh.md")
+    errs, diags = run(tree, "zh")
+    flagged = [d for d in diags if d.code == "MD_ZH_UNTRANSLATED"]
+    assert flagged[0].message.startswith("The topic title") and flagged[0].line == 3
+    # Headings 2 and 3 contain Chinese; the other four were left in English.
+    assert sorted(d.slide for d in flagged[1:]) == [1, 4, 5, 6]
+    assert all((d.data or {}).get("fingerprint") for d in flagged), "must be acknowledgeable"

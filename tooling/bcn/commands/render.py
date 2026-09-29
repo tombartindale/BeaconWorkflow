@@ -40,6 +40,7 @@ def marp_source(p: ParsedTopic, theme: Theme, lang: str) -> str:
     if size:
         style += f" --bcn-font-size: {size}px;"
     style += " }"
+    style += f" section h1, section h2, section h3 {{ font-weight: {theme.title_weight}; }}"
     if lang == "zh":
         style += " section { word-break: normal; line-break: strict; }"
     body = p.stripped_body()

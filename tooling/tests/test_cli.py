@@ -1,7 +1,6 @@
 """End-to-end behaviour of the CLI contract: envelope shape, exit codes, state on disk."""
 
 import json
-from pathlib import Path
 
 from bcn.cli import main
 
@@ -145,3 +144,71 @@ def test_intake_refuses_to_overwrite(tree, capsys):
     paste.write_text(topic_md("KV7015-U09-T01"))
     code, env = bcn(capsys, "intake", str(tree / "KV7015"), "--from", str(paste))
     assert env["results"][0]["action"] == "refused"
+
+
+def test_acknowledge_and_severity(tree, capsys):
+    t = tree / "KV7015/U01/T01"
+    (t / "topic.md").write_text(topic_md().replace("gives one example", "gives one example from 12 March", 1))
+    code, env = bcn(capsys, "validate", str(t))
+    dates = [d for d in env["diagnostics"] if d["code"] == "MD_DATE"]
+    assert code == 1 and len(dates) == 1
+    fp = dates[0]["data"]["fingerprint"]
+    code, env = bcn(capsys, "ack", str(t), "--fingerprint", fp, "--note", "an example", "--by", "test")
+    assert code == 0 and env["ok"] and env["acknowledged"][fp]["note"] == "an example"
+    step = json.loads((t / "build/validate.json").read_text())
+    assert step["ok"] and step["diagnostics"][0]["level"] == "info"
+    # Structural findings cannot be acknowledged.
+    code, env = bcn(capsys, "ack", str(t), "--fingerprint", "MD_SAY_MISSING|en|s1|")
+    assert code == 2
+    # Withdrawn, it blocks again; made a warning programme-wide, it does not.
+    code, env = bcn(capsys, "ack", str(t), "--fingerprint", fp, "--clear")
+    assert code == 1
+    (tree / "programme.toml").write_text('[validate.severity]\nMD_DATE = "warn"\n')
+    from bcn import config
+    config._cache.clear()
+    code, env = bcn(capsys, "validate", str(t))
+    assert code == 0 and [d["level"] for d in env["diagnostics"] if d["code"] == "MD_DATE"] == ["warn"]
+
+
+def test_superseded_prerequisite_failure_is_not_a_blocker(tree, capsys):
+    # render refused while validate was failing; once validate passes, that refusal is history.
+    t = tree / "KV7015/U01/T01"
+    good = (t / "topic.md").read_text()
+    (t / "topic.md").write_text(good.replace("title: A topic title", "title: A topic title\nextra: x"))
+    bcn(capsys, "validate", str(t))
+    code, env = bcn(capsys, "render", str(t))
+    assert env["diagnostics"][0]["code"] == "STEP_PREREQUISITE"
+    (t / "topic.md").write_text(good)
+    age(t / "topic.md", 5)
+    age(t / "build/render.json", 3)
+    bcn(capsys, "validate", str(t))
+    _, env = bcn(capsys, "status", str(t))
+    en = env["results"][0]["en"]
+    assert not en["blocked"] and en["next"] == "render" and en["blockers"] == []
+
+
+def test_edit_dry_run_save_history_and_conflict(tree, capsys):
+    import hashlib
+    t = tree / "KV7015/U01/T01"
+    original = (t / "topic.md").read_bytes()
+    sha = hashlib.sha256(original).hexdigest()
+    draft = tree.parent / "draft.md"
+
+    # Dry run: problems reported, nothing written.
+    draft.write_text(original.decode().replace("title: A topic title", "title: A topic title\nextra: x"))
+    code, env = bcn(capsys, "edit", str(t), "--from", str(draft), "--dry-run")
+    assert code == 0 and env["validation_ok"] is False and env["results"][0]["written"] is False
+    assert (t / "topic.md").read_bytes() == original
+
+    # Save: written, previous version kept, validate result recorded.
+    draft.write_text(original.decode().replace("Point one", "Point uno", 1))
+    code, env = bcn(capsys, "edit", str(t), "--from", str(draft), "--expect-sha", sha)
+    assert code == 0 and env["results"][0]["written"] is True and env["validation_ok"] is True
+    assert "Point uno" in (t / "topic.md").read_text()
+    assert [p.read_bytes() for p in (t / ".history").iterdir()] == [original]
+    assert json.loads((t / "build/validate.json").read_text())["ok"] is True
+
+    # Someone else changed it since we loaded it: refused, nothing lost.
+    code, env = bcn(capsys, "edit", str(t), "--from", str(draft), "--expect-sha", sha)
+    assert code == 1 and env["diagnostics"][-1]["code"] == "EDIT_CONFLICT"
+    assert "Point uno" in (t / "topic.md").read_text()

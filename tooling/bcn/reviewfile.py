@@ -5,6 +5,7 @@ disposable and these are not reproducible from anything else. Holds:
 
   cue_overrides   slide -> timecode set by hand where cues could not place a boundary
   transcripts     divergence id -> accept (SRT is fine) or correct (SRT text should read ...)
+  acknowledged    finding fingerprint -> a person has judged this validation finding acceptable
 """
 
 from __future__ import annotations
@@ -33,6 +34,7 @@ def load(t: Topic) -> dict[str, Any]:
     data.setdefault("schema", 1)
     data.setdefault("cue_overrides", {})
     data.setdefault("transcripts", {})
+    data.setdefault("acknowledged", {})
     return data
 
 
@@ -69,3 +71,17 @@ def decide(t: Topic, item: dict[str, Any], decision: str, text: str | None, who:
         "at": utcnow(),
     }
     save(t, data)
+
+
+def acknowledge(t: Topic, fingerprint: str, diag: dict[str, Any], note: str | None, who: str) -> None:
+    data = load(t)
+    data["acknowledged"][fingerprint] = {"code": diag.get("code"), "message": diag.get("message"), "note": note or None,
+                                         "by": who, "at": utcnow()}
+    save(t, data)
+
+
+def unacknowledge(t: Topic, fingerprint: str) -> bool:
+    data = load(t)
+    found = data["acknowledged"].pop(fingerprint, None) is not None
+    save(t, data)
+    return found

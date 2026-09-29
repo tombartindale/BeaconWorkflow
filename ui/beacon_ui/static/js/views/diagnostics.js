@@ -1,7 +1,7 @@
 // Diagnostics: everything outstanding, grouped by code, because failures cluster and
 // fixing a class of them at once is how the work goes. Mis-transcriptions get their own
 // tab: a proofreading task, with both readings side by side.
-import { api, fmtTime, h, levelChip, mount, runJob, store, subscribe, topicPath } from '../core.js';
+import { ackControls, api, fmtTime, h, levelChip, mount, runJob, store, subscribe, topicPath } from '../core.js';
 
 export function diagnosticsView(main, tab) {
   const f = { level: 'warn', module: '', lang: '', code: '' };
@@ -55,10 +55,12 @@ export function diagnosticsView(main, tab) {
         h('ul', { class: 'diaglist' }, items.slice(0, 200).map(d => h('li', {},
           h('div', {}, d.lang ? h('span', { class: 'chip' }, d.lang.toUpperCase()) : null),
           h('div', {},
-            h('div', {}, d.topic ? h('a', { href: `#/topic/${d.topic}` }, d.topic) : null, d.topic ? ' · ' : '', d.message),
+            h('div', {}, d.topic ? h('a', { href: `#/topic/${d.topic}` }, d.topic) : null,
+              !d.topic && d.data?.document && d.file ? h('a', { href: `#/doc/${d.file}${d.line ? '?line=' + d.line : ''}` }, d.file) : null,
+              d.topic || (d.data?.document && d.file) ? ' · ' : '', d.message),
             h('div', { class: 'loc' }, [d.file ? `${d.file}${d.line ? ':' + d.line : ''}` : null, d.slide ? `slide ${d.slide}` : null,
               d.data?.step ? `from ${d.data.step}` : null].filter(Boolean).join(' · ')),
-            d.hint ? h('div', { class: 'hint' }, d.hint) : null)))));
+            d.hint ? h('div', { class: 'hint' }, d.hint) : null, ackControls(d))))));
     });
   }
 

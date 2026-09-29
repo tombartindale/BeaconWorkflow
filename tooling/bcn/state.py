@@ -26,6 +26,19 @@ STAGES = {
 }
 STEPS = ["validate", "render", "cues", "subtitles", "compose", "package"]
 
+# Which earlier steps each step checks before running (runner.require_step).
+UPSTREAM = {
+    ("render", "en"): [("validate", "en")],
+    ("cues", "en"): [("validate", "en")],
+    ("subtitles", "en"): [("cues", "en")],
+    ("compose", "en"): [("render", "en"), ("cues", "en")],
+    ("package", "en"): [("validate", "en"), ("render", "en"), ("cues", "en"), ("subtitles", "en")],
+    ("render", "zh"): [("validate", "zh")],
+    ("subtitles", "zh"): [("validate", "zh")],
+    ("compose", "zh"): [("render", "zh")],
+    ("package", "zh"): [("validate", "zh"), ("render", "zh"), ("subtitles", "zh"), ("package", "en")],
+}
+
 
 def _iso(t: float | None) -> str | None:
     if t is None:
@@ -152,7 +165,19 @@ class TopicState:
             fi = self.f(f"build/{p.name}", p)
             env = fsutil.read_json(p) if fi.exists else None
             newest = max((i.mtime for i in inputs if i.exists and i.mtime), default=None)
-            self.steps[k] = Step(name, lang, env, fi.mtime, newest)
+            step = Step(name, lang, env, fi.mtime, newest)
+            # A step that refused to run because an earlier step had not passed says nothing
+            # about the topic once that earlier step has run again: treat it as out of date.
+            if env and not env.get("ok"):
+                codes = {d.get("code") for d in step.errors()}
+                if codes == {"STEP_PREREQUISITE"}:
+                    for up_name, up_lang in UPSTREAM.get(k, []):
+                        up = self.t.step_file(up_name, up_lang)
+                        up_m = self.f(f"build/{up.name}", up).mtime
+                        if up_m and fi.mtime and up_m > fi.mtime:
+                            step.inputs_newest = float("inf")
+                            break
+            self.steps[k] = step
         return self.steps[k]
 
     def compute(self) -> dict[str, Any]:
@@ -349,11 +374,17 @@ class TopicState:
         st.stage = stages[idx]
         st.stage_index = idx
 
+    # A step that refused because an input or an earlier step is not there yet is waiting,
+    # not blocked: the next step already says what is missing. Only real problems block.
+    NOT_READY = {"STEP_PREREQUISITE", "FS_MISSING"}
+
     def _count(self, st: LangState, s: Step) -> None:
         if not s.exists or not s.fresh:
             return
         for d in (s.env or {}).get("diagnostics", []):
             lvl = d.get("level", "info")
+            if lvl == "error" and d.get("code") in self.NOT_READY:
+                continue
             st.counts[lvl] = st.counts.get(lvl, 0) + 1
             if lvl == "error":
                 st.blockers.append({"code": d.get("code"), "message": d.get("message"), "step": s.name, "slide": d.get("slide")})
@@ -418,6 +449,12 @@ class TopicState:
                          "bytes": fi.size, "mtime": _iso(fi.mtime), "hydration": fi.hydration if fi.exists else None,
                          "stale": stale if fi.exists else None})
 
+        def bumpers(lang: str) -> None:
+            src = fsutil.mtime(t.src(lang)) or 0
+            for kind, p in (("bumper_card", t.bumper_card("intro", lang)), ("bumper_card", t.bumper_card("outro", lang)),
+                            ("bumper", t.bumper("intro", lang)), ("bumper", t.bumper("outro", lang))):
+                add(str(p.relative_to(t.dir)), p, lang, (fsutil.mtime(p) or 0) < src if p.is_file() else None, kind=kind)
+
         def stale_of(step: str, lang: str) -> bool | None:
             s = self.steps.get((step, lang))
             return (not s.fresh) if s and s.exists else None
@@ -429,6 +466,12 @@ class TopicState:
         for step in ("validate", "render", "cues", "subtitles", "compose", "package"):
             add(f"build/{step}.json", t.step_file(step, "en"), "en", stale_of(step, "en"), kind="result")
         add("build/deck.en.pdf", t.deck_pdf("en"), "en", stale_of("render", "en"), kind="deck")
+        script_stale = None
+        if (t.build / "script.en.pdf").is_file():
+            script_stale = (fsutil.mtime(t.build / "script.en.pdf") or 0) < (fsutil.mtime(t.src("en")) or 0)
+        for ext in ("pdf", "html", "txt"):
+            add(f"build/script.en.{ext}", t.build / f"script.en.{ext}", "en", script_stale, kind="script")
+        bumpers("en")
         rows.append({"key": "build/slides/en", "path": str(t.slides_dir("en").relative_to(t.root)), "lang": "en", "kind": "slides",
                      "exists": bool(self.pngs["en"]), "count": len(self.pngs["en"]), "stale": stale_of("render", "en") if self.pngs["en"] else None,
                      "mtime": _iso(max((fsutil.mtime(p) or 0 for p in self.pngs["en"]), default=None)) if self.pngs["en"] else None,
@@ -448,6 +491,7 @@ class TopicState:
                      "mtime": _iso(max((fsutil.mtime(p) or 0 for p in self.pngs["zh"]), default=None)) if self.pngs["zh"] else None,
                      "hydration": None, "bytes": None})
         add("build/draft.zh.mp4", t.draft("zh"), "zh", stale_of("compose", "zh"), kind="draft")
+        bumpers("zh")
         add("out/manifest.zh.json", t.manifest("zh"), "zh", stale_of("package", "zh"), kind="package")
         return rows
 

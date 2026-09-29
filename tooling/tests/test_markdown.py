@@ -70,3 +70,16 @@ def test_images_collected():
 def test_to_html():
     h = to_html("# T\n\n- a **b**\n- c\n\n![alt](assets/x.png)", "/files/K/")
     assert "<h1>T</h1>" in h and "<strong>b</strong>" in h and 'src="/files/K/assets/x.png"' in h
+
+
+def test_recording_script_outputs():
+    from bcn.commands.script import script_html, script_text
+    from bcn.tree import Topic
+    t = p("---\ntopic_id: KV7015-U01-T01\ntitle: T\nminutes: 1\nlang: en\n---\n\n# First\n\n> **Say:** One *two*.\n>\n> Three.\n\n---\n\n# Second\n\n> **Say:** Four.\n")
+    topic = Topic(Path("/r"), "KV7015", "U01", "T01")
+    txt = script_text(t)
+    assert "— SLIDE 1 · First —" in txt and "One two.\n\nThree." in txt and "SLIDE 2 · Second" in txt
+    page = script_html(topic, t)
+    assert page.count("class='divider'") == 2 and "<em>two</em>" in page and "Say:" not in page
+    prompt = script_html(topic, t, teleprompter=True)
+    assert "<h2>SLIDE 2 · Second</h2>" in prompt and "<style>" not in prompt

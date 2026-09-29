@@ -16,8 +16,8 @@ from .envelope import Diagnostic, Envelope, Fail, emit
 from .tree import find_root, resolve
 
 COMMANDS = [
-    "validate", "render", "cues", "subtitles", "compose", "status", "package", "qa",
-    "show", "diagnostics", "review", "intake", "translation", "schema", "codes", "doctor",
+    "validate", "render", "script", "bumpers", "cues", "subtitles", "compose", "status", "package", "qa",
+    "show", "diagnostics", "review", "ack", "edit", "intake", "translation", "sync", "schema", "codes", "doctor",
 ]
 # Commands whose positional argument is not a tree path.
 NO_TARGET = {"schema", "codes", "doctor"}
@@ -87,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.jobs < 1:
             raise Fail("USAGE", "--jobs must be at least 1.")
+        if hasattr(mod, "prepare"):
+            mod.prepare(args)  # e.g. sync --init creates the root before it can be resolved
         try:
             env.root = find_root(__import__("pathlib").Path(args.path))
         except Fail:

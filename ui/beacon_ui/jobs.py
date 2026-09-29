@@ -31,8 +31,8 @@ STALL_SECONDS = 10
 LOG_LINES = 400
 
 # What the browser may ask for. Anything else is refused.
-COMMANDS = {"validate", "render", "cues", "subtitles", "compose", "package", "qa", "review", "intake", "translation"}
-FLAG_ARGS = {"force", "no_bumpers", "dump_narration", "accept", "clear", "dry_run", "export"}
+COMMANDS = {"validate", "render", "script", "bumpers", "cues", "subtitles", "compose", "package", "qa", "review", "intake", "translation", "sync", "ack", "edit"}
+FLAG_ARGS = {"force", "no_bumpers", "dump_narration", "accept", "clear", "dry_run", "export", "pull", "push"}
 VALUE_ARGS = {
     "lang": re.compile(r"^(en|zh)$"),
     "theme": re.compile(r"^[A-Za-z0-9_-]{1,40}$"),
@@ -43,6 +43,11 @@ VALUE_ARGS = {
     "from": re.compile(r"^.{1,1024}$"),     # server-provided paths only, never from the browser
     "import": re.compile(r"^.{1,1024}$"),   # checked to be inside the root before use
     "by": re.compile(r"^[^\x00-\x1f]{0,80}$"),
+    "prefer": re.compile(r"^(remote|local)$"),
+    "expect_sha": re.compile(r"^[0-9a-f]{64}$"),
+    "fingerprint": re.compile(r"^[A-Z_]{3,40}\|(en|zh)\|s\d{1,3}\|[^\x00-\x1f]{0,300}$"),
+    "note": re.compile(r"^[^\x00-\x1f]{0,500}$"),
+    "only": re.compile(r"^[A-Z]{2}\d{4}/[^\x00-\x1f]{1,300}$"),  # a local path under the root; may be a list
 }
 
 
@@ -141,7 +146,8 @@ class JobQueue:
                 if not isinstance(v, bool):
                     raise ValueError(f"'{k}' must be true or false.")
             elif k in VALUE_ARGS:
-                if not isinstance(v, (str, int)) or not VALUE_ARGS[k].match(str(v)):
+                values = v if (k == "only" and isinstance(v, list)) else [v]
+                if not values or any(not isinstance(x, (str, int)) or ".." in str(x) or not VALUE_ARGS[k].match(str(x)) for x in values):
                     raise ValueError(f"'{k}' has an invalid value.")
             else:
                 raise ValueError(f"'{k}' is not an allowed argument.")
@@ -222,15 +228,17 @@ class JobQueue:
         a = j.args
         path = str(self.root / target) if target != "." else str(self.root)
         argv = [j.command, path]
-        for k in ("lang", "theme", "set", "unset", "item", "correct", "from", "by"):
+        for k in ("lang", "theme", "set", "unset", "item", "correct", "from", "by", "prefer", "fingerprint", "note", "expect_sha"):
             if k in a and a[k] not in (None, ""):
-                argv += [f"--{k}", str(a[k])]
+                argv += [f"--{k.replace('_', '-')}", str(a[k])]
+        for path in (a.get("only") if isinstance(a.get("only"), list) else [a["only"]] if a.get("only") else []):
+            argv += ["--only", str(path)]
         if "import" in a:
             argv += ["--import", str(a["import"])]
         for k in FLAG_ARGS:
             if a.get(k):
                 argv.append("--" + k.replace("_", "-"))
-        if j.command in ("validate", "render", "cues", "subtitles", "compose", "package", "qa"):
+        if j.command in ("validate", "render", "script", "bumpers", "cues", "subtitles", "compose", "package", "qa"):
             argv += ["--jobs", str(max(1, int(self.prefs().get("jobs", 1))))]
         return argv
 

@@ -7,6 +7,10 @@ import { jobsView } from './views/jobs.js';
 import { intakeView } from './views/intake.js';
 import { translationView } from './views/translation.js';
 import { settingsView } from './views/settings.js';
+import { syncView } from './views/sync.js';
+import { docView } from './views/doc.js';
+import { prompterView } from './views/prompter.js';
+import { editorView } from './views/editor.js';
 
 const main = document.getElementById('main');
 let current = null; // { dispose() }
@@ -19,6 +23,10 @@ const routes = [
   [/^#\/jobs(?:\/(\d+))?$/, (m) => jobsView(main, m[1] ? Number(m[1]) : null), 'jobs'],
   [/^#\/intake$/, () => intakeView(main), 'intake'],
   [/^#\/translation$/, () => translationView(main), 'translation'],
+  [/^#\/sync$/, () => syncView(main), 'sync'],
+  [/^#\/prompt\/([A-Z]{2}\d{4}-U\d{2}-T\d{2})$/, (m) => prompterView(main, m[1]), 'programme'],
+  [/^#\/edit\/([A-Z]{2}\d{4}-U\d{2}-T\d{2})(?:\?lang=(en|zh))?(?:[?&]line=(\d+))?$/, (m) => editorView(main, m[1], m[2] || 'en', m[3] ? Number(m[3]) : null), 'programme'],
+  [/^#\/doc\/([A-Z]{2}\d{4}\/[^?]+?)(?:\?line=(\d+))?$/, (m) => docView(main, decodeURIComponent(m[1]), m[2] ? Number(m[2]) : null), 'programme'],
   [/^#\/settings$/, () => settingsView(main), 'settings'],
 ];
 

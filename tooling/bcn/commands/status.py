@@ -22,6 +22,7 @@ from ..markdown import parse
 from ..media import probe
 from ..state import STAGES, TopicState, all_topics, module_context
 from ..tree import Target, Topic
+from .validate import module_documents
 
 HELP = "current state of every topic beneath the path"
 
@@ -184,10 +185,21 @@ def run(args: argparse.Namespace, env: Envelope, target: Target) -> None:
     module_docs = {}
     for m in target.modules:
         ctx = module_context(target.root, m)
-        mv = fsutil.read_json(target.root / m / "build" / "validate.json") or {}
+        # Module documents are parsed afresh (they are small), so their problems show without a validate run.
+        mdir = target.root / m
+        diags = module_documents(Target(target.root, mdir, "module", m, [m], [], []))
+        names = ["course-map.md", "assets.md", "reading-list.md"] + sorted(p.name for p in mdir.glob("assignment-*.md"))
+        units = sorted(set(ctx.course_map.units) | {p.parent.name for p in mdir.glob("U*/activity.md")})
+        documents = []
+        for rel in names + [f"{u}/activity.md" for u in units]:
+            mine = [d for d in diags if d.file == f"{m}/{rel}"]
+            documents.append({"path": f"{m}/{rel}", "exists": (mdir / rel).is_file(),
+                              "errors": sum(1 for d in mine if d.level == "error"),
+                              "warnings": sum(1 for d in mine if d.level == "warn")})
         module_docs[m] = {
             "course_map": ctx.course_map.path.is_file(),
-            "errors": len([d for d in mv.get("diagnostics", []) if d.get("level") == "error"]) + len([d for d in ctx.course_map.diagnostics if d.level == "error"]),
+            "documents": documents,
+            "errors": sum(1 for d in diags if d.level == "error"),
             "title": _module_title(ctx.course_map.path),
             "unit_titles": dict(ctx.course_map.units),
         }
@@ -203,7 +215,9 @@ def _module_title(p: Path) -> str | None:
         for line in p.read_text(encoding="utf-8-sig").splitlines():
             if line.startswith("# "):
                 title = line[2:].strip()
-                return title[len(p.parent.name):].strip(" :-—") if title.startswith(p.parent.name) else title
+                title = title[len(p.parent.name):].strip(" :-—–") if title.startswith(p.parent.name) else title
+                # "KV7016 — Course map" names the document, not the module.
+                return None if title.lower() in ("course map", "course-map", "") else title
     except OSError:
         return None
     return None

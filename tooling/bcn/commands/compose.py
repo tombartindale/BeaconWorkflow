@@ -6,7 +6,8 @@ reduced resolution. Output is build/draft.mp4 and never goes near out/.
 
 Bumpers never change the cue sheet: the body is composed on its own timeline,
 where cues.csv is correct as written, and the intro and outro are joined around
-it afterwards. The intro's duration is reported as body_offset.
+it afterwards. The intro's duration is reported as body_offset. The topic's own
+bumpers from bcn bumpers are used when current, else the files named in [bumpers].
 """
 
 from __future__ import annotations
@@ -105,9 +106,18 @@ def compose_topic(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, args
         subs = t.srt(lang)
     require_input(t, subs, lang)
 
+    # The topic's own bumpers (bcn bumpers) come first; the programme-wide files in [bumpers] are the fallback.
     bumpers: dict[str, Path] = {}
     if not args.no_bumpers:
         for kind in ("intro", "outro"):
+            made = t.bumper(kind, lang)
+            if made.is_file():
+                if fsutil.is_fresh([made], [t.src(lang)]):
+                    bumpers[kind] = made
+                    continue
+                r.diagnostics.append(Diagnostic("COMPOSE_BUMPER", f"The topic's {kind} is older than {t.src(lang).name}; it is skipped.",
+                                                topic=t.id, lang=lang, file=str(made.relative_to(t.dir)),
+                                                hint=f"Run bcn bumpers{' --lang ' + lang if lang != 'en' else ''} again."))
             rel = cfg["bumpers"][kind]
             if rel:
                 p = (t.root / rel).resolve()
@@ -130,7 +140,7 @@ def compose_topic(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, args
         raise Fail("CUE_SHEET_INVALID", "The last slide starts after the video ends.", file=t.cues_csv.name)
 
     theme = load_theme(t.root, resolve_theme_name(cfg, args.theme))
-    sub_font = theme.fonts[lang][0]
+    sub_font = theme.subtitle_font(lang)
     wm_font = next((f for f in FONT_CANDIDATES if Path(f).is_file()), None)
 
     work = t.build / f".compose-{lang}"

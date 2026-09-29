@@ -52,6 +52,7 @@ CODES: dict[str, tuple[str, str]] = {
     "MD_IMAGE_PATH": ("error", "An image path is not a relative path into assets/."),
     "MD_ASSET_MISSING": ("error", "A referenced asset file does not exist."),
     "MD_ZH_CHARS": ("error", "A Mandarin slide carries more characters than the sanity limit."),
+    "MD_ZH_UNTRANSLATED": ("error", "A Mandarin title or slide heading has no Chinese in it; it was probably left in English."),
     "MD_PARITY_COUNT": ("error", "Mandarin slide count differs from the English."),
     "MD_PARITY_BREAK": ("error", "A Mandarin slide break sits in a different position from the English."),
     "MD_EN_INVALID": ("error", "The English source must validate before the Mandarin can be checked against it."),
@@ -90,6 +91,10 @@ CODES: dict[str, tuple[str, str]] = {
     "SRT_LINE_LENGTH": ("info", "A subtitle line was rewrapped to the configured maximum."),
     "SRT_CUE_DURATION": ("warn", "A subtitle cue is longer than the configured maximum; timings are never changed."),
     "SRT_CORRECTION": ("info", "A reviewed mis-transcription correction was applied to the subtitle text."),
+    # --- bumpers ---------------------------------------------------------
+    "BUMPER_NO_TITLE": ("error", "The topic's front matter has no title to put on the title card."),
+    "BUMPER_NO_LOGO": ("warn", "The theme names no logo, so the outro card is blank."),
+    "BUMPER_TITLE_FIT": ("warn", "The title does not fit the title card even at the smallest size."),
     # --- compose ---------------------------------------------------------
     "COMPOSE_BUMPER": ("warn", "A bumper is configured but could not be used."),
     # --- package ---------------------------------------------------------
@@ -97,6 +102,9 @@ CODES: dict[str, tuple[str, str]] = {
     "PKG_TRANSCODED": ("info", "The video was transcoded to the delivery specification."),
     # --- review ----------------------------------------------------------
     "REVIEW_UNKNOWN_ITEM": ("error", "No suspected mis-transcription with that id."),
+    # --- edit ------------------------------------------------------------
+    "EDIT_CONFLICT": ("error", "The file changed on disk while it was being edited; the edit was not saved."),
+    "EDIT_SAVED": ("info", "Edited text was saved."),
     # --- intake ----------------------------------------------------------
     "INTAKE_NO_TOPICS": ("error", "No topic front matter was found in the pasted text."),
     "INTAKE_NOT_IN_MAP": ("error", "The pasted topic is not in the course map."),
@@ -108,6 +116,15 @@ CODES: dict[str, tuple[str, str]] = {
     "XL_EXPORTED": ("info", "A topic was exported for translation."),
     "XL_IMPORTED": ("info", "A translated file was placed."),
     "XL_UNKNOWN_FILE": ("warn", "A returned file does not name a known topic."),
+    # --- sync --------------------------------------------------------------
+    "SYNC_NOT_CONFIGURED": ("error", "No [sync] remote is set in programme.toml."),
+    "SYNC_REMOTE_MISSING": ("error", "The shared folder is not where programme.toml says it is."),
+    "SYNC_CONFLICT": ("error", "A file changed on both sides since the last sync; neither was overwritten."),
+    "SYNC_COPIED": ("info", "A file was copied."),
+    "SYNC_ONE_SIDE": ("info", "A file exists on one side only and was left alone; deletions never sync."),
+    "SYNC_REMOTE_CONFLICT_COPY": ("error", "The shared folder holds a sync conflict copy of a file."),
+    "SYNC_UNSTABLE": ("warn", "A file changed in the last few seconds and was skipped this time."),
+    "SYNC_DOWNLOAD_FAILED": ("error", "A cloud-only file could not be downloaded."),
     # --- qa --------------------------------------------------------------
     "QA_TOPIC_NO_DIR": ("error", "A topic in the course map has no directory."),
     "QA_DIR_NOT_IN_MAP": ("error", "A topic directory is not in the course map."),

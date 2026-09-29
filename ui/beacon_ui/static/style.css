@@ -271,7 +271,7 @@ table.topics th.unit .t { font-weight: 400; color: var(--ink-3); display: block;
 .strip.two { grid-template-rows: auto auto; }
 .thumb { position: relative; cursor: pointer; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--panel-2); }
 .thumb img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
-.thumb .i { position: absolute; top: 3px; left: 4px; font-size: 10.5px; background: rgba(0,0,0,.55); color: #fff; padding: 0 5px; border-radius: 3px; }
+.thumb .i { position: absolute; bottom: 4px; left: 4px; font-size: 10.5px; background: rgba(0,0,0,.55); color: #fff; padding: 0 5px; border-radius: 3px; }
 .thumb .flag { position: absolute; top: 3px; right: 4px; }
 .thumb.flagged { border-color: var(--blocked); box-shadow: 0 0 0 1px var(--blocked); }
 .thumb.flagged-warn { border-color: var(--stale); box-shadow: 0 0 0 1px var(--stale); }
@@ -392,3 +392,86 @@ table.cues tr.low td.conf { color: var(--blocked); font-weight: 700; }
   .grid-2 { grid-template-columns: 1fr; }
   .player-main { grid-template-columns: 1fr; }
 }
+
+/* -- document viewer ------------------------------------------------------------------------- */
+.doc { overflow-x: auto; }
+table.doclines { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: 12.5px; }
+table.doclines td { padding: 0 10px; vertical-align: top; white-space: pre-wrap; word-break: break-word; }
+table.doclines td.ln { width: 1%; color: var(--ink-3); text-align: right; user-select: none; border-right: 1px solid var(--line-2); white-space: nowrap; }
+table.doclines tr.flag-error td.code { background: var(--blocked-bg); }
+table.doclines tr.flag-warn td.code { background: var(--stale-bg); }
+table.doclines tr.note td { padding: 4px 10px 8px; font-family: system-ui, sans-serif; font-size: 12.5px; white-space: normal; }
+.docs-list a.missing { color: var(--ink-3); }
+.ack { margin-top: 4px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+/* Slides pane: vertical, one row per slide, EN and ZH side by side */
+.slide-pair { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.slide-pair.two { grid-template-columns: 1fr 1fr; }
+
+/* -- teleprompter ---------------------------------------------------------------------------- */
+body.prompting { background: #000; overflow: hidden; }
+body.prompting .topbar, body.prompting #banners { display: none; }
+body.prompting main { padding: 0; max-width: none; }
+.prompter { position: fixed; inset: 0; overflow-y: auto; background: #000; outline: none; scrollbar-width: none; }
+.prompter::-webkit-scrollbar { display: none; }
+.prompter-text {
+  margin: 0 auto; padding: 33vh 0 70vh; color: #f4f4f4; line-height: 1.45;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 500;
+}
+.prompter-text p { margin: 0 0 0.9em; }
+.prompter-text strong { color: #fff; font-weight: 800; }
+.prompter-text em { color: #ffe08a; font-style: normal; }
+.prompter-title { font-size: 0.45em; color: #888; margin-bottom: 1.2em; letter-spacing: .03em; }
+.prompter-divider {
+  display: flex; align-items: center; gap: 0.5em; margin: 1.2em 0 0.6em;
+  font-size: 0.4em; font-weight: 700; color: #7fb3e0; text-transform: uppercase; letter-spacing: .08em;
+}
+.prompter-divider::after { content: ""; flex: 1; border-top: 2px solid #2d4a63; }
+.prompter-end { font-size: 0.45em; color: #666; text-align: center; margin-top: 2em; }
+.prompter-eyeline {
+  position: fixed; left: 0; right: 0; top: 33vh; height: 0; pointer-events: none;
+  display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255, 255, 255, .18);
+}
+.prompter-eyeline span { color: #e0a13a; font-size: 22px; margin-top: -1px; padding: 0 8px; transform: translateY(-50%); }
+.prompter-countdown {
+  position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none;
+  font: 800 28vh/1 "Helvetica Neue", Helvetica, Arial, sans-serif; color: rgba(255, 255, 255, .85);
+}
+.prompter-bar {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 5;
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: 96vw;
+  padding: 8px 12px; border-radius: 10px; background: rgba(28, 32, 38, .92); color: #cfd6dc;
+  font: 13px system-ui, sans-serif; transition: opacity .4s;
+}
+.prompter-bar.faded { opacity: 0; }
+.prompter-bar .grp { display: inline-flex; gap: 4px; align-items: center; }
+.prompter-bar b { min-width: 2.4em; text-align: center; color: #fff; }
+.prompter-bar .status { color: #9aa6b0; font-variant-numeric: tabular-nums; }
+.pbtn { background: #333b44; color: #e8edf1; border: 1px solid #46515c; border-radius: 6px; padding: 3px 9px; cursor: pointer; font: inherit; }
+.pbtn:hover { background: #3e4852; }
+.pbtn.on { background: #e0a13a; border-color: #e0a13a; color: #111; }
+
+/* -- script editor ---------------------------------------------------------------------------- */
+.ed-wrap { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr); gap: 16px; align-items: start; }
+.ed-main { display: flex; flex-direction: column; }
+.ed-box { display: flex; height: calc(100vh - 230px); min-height: 420px; }
+.ed-gutter {
+  flex: none; width: 52px; overflow: hidden; padding: 12px 8px 12px 0; text-align: right; user-select: none;
+  font: 13px/21px var(--mono); color: var(--ink-3); background: var(--panel-2); border-right: 1px solid var(--line);
+}
+.ed-gutter .ln.error { color: var(--blocked); font-weight: 700; background: var(--blocked-bg); }
+.ed-gutter .ln.warn { color: var(--stale); font-weight: 700; }
+.ed-text {
+  flex: 1; border: 0; border-radius: 0; resize: none; padding: 12px 14px; margin: 0; outline: none;
+  font: 13px/21px var(--mono); background: var(--panel); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere;
+  tab-size: 2;
+}
+.ed-box { position: relative; overflow: hidden; }
+.ed-measure {
+  position: absolute; visibility: hidden; pointer-events: none; left: 0; top: 0;
+  box-sizing: border-box; padding: 0 14px; font: 13px/21px var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2;
+}
+.ed-gutter .ln { box-sizing: border-box; }
+.ed-help { padding: 6px 12px; border-top: 1px solid var(--line-2); }
+.ed-side { position: sticky; top: 64px; max-height: calc(100vh - 90px); overflow: auto; }
+@media (max-width: 1100px) { .ed-wrap { grid-template-columns: 1fr; } .ed-side { position: static; } }

@@ -15,7 +15,6 @@ from .envelope import Diagnostic
 LO_RE = re.compile(r"\bLO\d+\b")
 LO_ITEM_RE = re.compile(r"^\s*[-*]\s+\*\*(LO\d+)\*\*[:.\s-]*(.*)$")
 LO_ITEM_LOOSE_RE = re.compile(r"^\s*[-*]\s+\*\*([^*]+)\*\*")
-UNIT_HEAD_RE = re.compile(r"^##\s+(\S+)\s*(.*)$")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
 OUTSTANDING_DONE = {"delivered", "done", "received", "complete", "closed"}
 
@@ -97,27 +96,41 @@ def load_course_map(module_dir: Path, required_headings: list[str] | None = None
         cm.diagnostics.append(Diagnostic("DOC_MISSING", f"{rel} does not exist.", file=rel))
         return cm
     lines = path.read_text(encoding="utf-8-sig").splitlines()
-    _check_headings(lines, required_headings or ["Learning outcomes"], rel, cm.diagnostics)
+    if required_headings:
+        _check_headings(lines, required_headings, rel, cm.diagnostics)
 
+    # Two ways of writing a course map are accepted:
+    #   units     "## U01 Title"             or  "## Unit 1 — Title"
+    #   topics    a table under each unit whose first column is T01, U01-T01 or KV7016-U01-T01
+    #   outcomes  "## Learning outcomes" with "- **LO1** text" items,
+    #             or "## Outcome coverage" with a table whose first column is "LO1 text"
     section = None
     unit = None
     for i, line in enumerate(lines):
         m = HEADING_RE.match(line)
         if m and len(m.group(1)) == 2:
             text = m.group(2).strip()
-            if text.lower().startswith("learning outcomes"):
+            low = text.lower()
+            if low.startswith("learning outcomes"):
                 section, unit = "outcomes", None
                 continue
-            um = UNIT_HEAD_RE.match(line)
-            first = um.group(1) if um else ""
-            if re.match(r"^U\d{2}$", first):
-                section, unit = "unit", first
+            if low.startswith("outcome coverage") or low.startswith("outcomes"):
+                section, unit = None, None
+                for ln, cells in _table_rows(lines, i + 1):
+                    om = re.match(r"^\**(LO\d+)\**[:.\s—-]*(.*)$", cells[0]) if cells else None
+                    if om:
+                        _add_outcome(cm, om.group(1), om.group(2).strip(), ln, rel)
+                continue
+            uid, title = _unit_heading(text)
+            if uid:
+                section, unit = "unit", uid
                 if unit in cm.units:
                     cm.diagnostics.append(Diagnostic("DOC_DUPLICATE_ID", f"Unit {unit} is listed twice.", file=rel, line=i + 1))
-                cm.units[unit] = um.group(2).strip(" :-—")
+                cm.units[unit] = title
                 for ln, cells in _table_rows(lines, i + 1):
                     _map_row(cm, unit, cells, ln, rel)
                 continue
+            first = text.split()[0] if text.split() else ""
             if re.match(r"^u\d+$", first, re.IGNORECASE):
                 cm.diagnostics.append(Diagnostic("DOC_ID_FORMAT", f"Unit id '{first}' must be U followed by two digits.",
                                                  file=rel, line=i + 1))
@@ -126,30 +139,54 @@ def load_course_map(module_dir: Path, required_headings: list[str] | None = None
         if section == "outcomes":
             om = LO_ITEM_RE.match(line)
             if om:
-                if om.group(1) in cm.outcomes:
-                    cm.diagnostics.append(Diagnostic("DOC_DUPLICATE_ID", f"Outcome {om.group(1)} is listed twice.",
-                                                     file=rel, line=i + 1))
-                cm.outcomes[om.group(1)] = om.group(2).strip()
+                _add_outcome(cm, om.group(1), om.group(2).strip(), i + 1, rel)
             elif (lm := LO_ITEM_LOOSE_RE.match(line)):
                 cm.diagnostics.append(Diagnostic("DOC_ID_FORMAT", f"Outcome id '{lm.group(1)}' must be LO followed by a number.",
                                                  file=rel, line=i + 1))
+    if not cm.units:
+        cm.diagnostics.append(Diagnostic("DOC_HEADING_MISSING", f"{rel} has no unit sections, so no topics were found.", file=rel,
+                                         hint="Give each unit a heading like '## Unit 1 — Title' (or '## U01 Title') followed by a topic table."))
+    if not cm.outcomes:
+        cm.diagnostics.append(Diagnostic("DOC_HEADING_MISSING", f"{rel} lists no learning outcomes.", file=rel,
+                                         hint="Add an '## Outcome coverage' table (first column 'LO1 description') or a '## Learning outcomes' list."))
     for t in cm.topics:
         for lo in t.outcomes:
-            if lo not in cm.outcomes:
-                cm.diagnostics.append(Diagnostic("DOC_OUTCOME_UNKNOWN", f"{t.unit}/{t.code} cites {lo}, which is not a listed outcome.",
+            if cm.outcomes and lo not in cm.outcomes:
+                cm.diagnostics.append(Diagnostic("DOC_OUTCOME_UNKNOWN", f"{t.unit}-{t.code} cites {lo}, which is not a listed outcome.",
                                                  file=rel, line=t.line))
     return cm
+
+
+def _unit_heading(text: str) -> tuple[str | None, str]:
+    m = re.match(r"^(U\d{2})\b\s*[:—–-]?\s*(.*)$", text)
+    if m:
+        return m.group(1), m.group(2).strip()
+    m = re.match(r"^Unit\s+(\d{1,2})\b\s*[:—–-]?\s*(.*)$", text, re.IGNORECASE)
+    if m:
+        return f"U{int(m.group(1)):02d}", m.group(2).strip()
+    return None, ""
+
+
+def _add_outcome(cm: CourseMap, lo: str, text: str, ln: int, rel: str) -> None:
+    if lo in cm.outcomes:
+        cm.diagnostics.append(Diagnostic("DOC_DUPLICATE_ID", f"Outcome {lo} is listed twice.", file=rel, line=ln))
+    cm.outcomes[lo] = text
 
 
 def _map_row(cm: CourseMap, unit: str, cells: list[str], ln: int, rel: str) -> None:
     if not cells or not cells[0]:
         return
-    code = cells[0]
-    if not re.match(r"^T\d{2}$", code):
-        cm.diagnostics.append(Diagnostic("DOC_ID_FORMAT", f"Topic id '{code}' must be T followed by two digits.", file=rel, line=ln))
+    raw = cells[0].strip("* `")
+    m = re.match(rf"^(?:{re.escape(cm.module)}-)?(?:(U\d{{2}})-)?(T\d{{2}})$", raw)
+    if not m:
+        cm.diagnostics.append(Diagnostic("DOC_ID_FORMAT", f"Topic id '{raw}' should look like T01 or {unit}-T01.", file=rel, line=ln))
         return
+    if m.group(1) and m.group(1) != unit:
+        cm.diagnostics.append(Diagnostic("DOC_ID_FORMAT", f"Topic {raw} is listed under {unit}.", file=rel, line=ln))
+        return
+    code = m.group(2)
     if cm.find(unit, code):
-        cm.diagnostics.append(Diagnostic("DOC_DUPLICATE_ID", f"{unit}/{code} is listed twice.", file=rel, line=ln))
+        cm.diagnostics.append(Diagnostic("DOC_DUPLICATE_ID", f"{unit}-{code} is listed twice.", file=rel, line=ln))
         return
     title = cells[1] if len(cells) > 1 else ""
     minutes = None
@@ -157,7 +194,7 @@ def _map_row(cm: CourseMap, unit: str, cells: list[str], ln: int, rel: str) -> N
         try:
             minutes = int(cells[2])
         except ValueError:
-            cm.diagnostics.append(Diagnostic("DOC_ID_FORMAT", f"Minutes '{cells[2]}' for {unit}/{code} is not a whole number.",
+            cm.diagnostics.append(Diagnostic("DOC_ID_FORMAT", f"Minutes '{cells[2]}' for {unit}-{code} is not a whole number.",
                                              file=rel, line=ln))
     outcomes = LO_RE.findall(cells[3]) if len(cells) > 3 else []
     cm.topics.append(MapTopic(unit, code, title, minutes, outcomes, ln))
@@ -207,7 +244,27 @@ def validate_doc(path: Path, rel: str, required: list[str], outcomes: dict[str, 
         for bad in re.findall(r"\b[Uu]\d{1}\b|\bu\d{2}\b", line):
             diags.append(Diagnostic("DOC_ID_FORMAT", f"'{bad}' is not a well-formed unit id (U followed by two digits).",
                                     file=rel, line=i + 1))
-        for uid in re.findall(r"\bU\d{2}\b", line):
-            if unit and uid != unit and path.name == "activity.md" and i < 3:
-                diags.append(Diagnostic("DOC_ID_FORMAT", f"{rel} names {uid} but lives in {unit}.", file=rel, line=i + 1))
+    return diags
+
+
+def validate_activity(path: Path, rel: str, required: list[str], outcomes: dict[str, str], module: str, unit: str,
+                      types: list[str]) -> list[Diagnostic]:
+    """An activity: optional front matter (unit, type, lang), required headings if configured, outcome refs."""
+    diags = validate_doc(path, rel, required, outcomes, unit)
+    lines = path.read_text(encoding="utf-8-sig").splitlines()
+    if lines and lines[0].strip() == "---":
+        fm: dict[str, tuple[str, int]] = {}
+        for i in range(1, min(len(lines), 30)):
+            if lines[i].strip() == "---":
+                break
+            if ":" in lines[i]:
+                k, v = lines[i].split(":", 1)
+                fm[k.strip()] = (v.strip().strip("'\""), i + 1)
+        want = f"{module}-{unit}"
+        if "unit" in fm and fm["unit"][0] not in (want, unit):
+            diags.append(Diagnostic("DOC_ID_FORMAT", f"{rel} says unit: {fm['unit'][0]}, but it is the activity for {want}.",
+                                    file=rel, line=fm["unit"][1]))
+        if types and "type" in fm and fm["type"][0] not in types:
+            diags.append(Diagnostic("DOC_ID_FORMAT", f"{rel} has type: {fm['type'][0]}; expected one of {', '.join(types)}.",
+                                    file=rel, line=fm["type"][1]))
     return diags

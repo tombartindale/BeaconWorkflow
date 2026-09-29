@@ -2,8 +2,8 @@
 // artefacts and diagnostics, with actions to run any step. The video pane is how a
 // mistimed cue gets found: ten seconds of watching beats any report.
 import {
-  api, confirmModal, fmtAgo, fmtBytes, fmtTC, fmtTime, h, levelChip, mount, NEXT_LABEL, pips, runJob,
-  STAGE_LABEL, store, subscribe, toast, topicPath,
+  api, awaitJob, confirmModal, fmtAgo, fmtBytes, fmtTC, fmtTime, h, levelChip, mount, NEXT_LABEL, pips, runJob,
+  STAGE_LABEL, store, subscribe, toast, topicPath, ackControls,
 } from '../core.js';
 
 const STEPS = ['validate', 'render', 'cues', 'subtitles', 'compose', 'package', 'qa'];
@@ -107,6 +107,22 @@ export function topicView(main, id, startAt) {
       h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: ui.force, onchange: e => { ui.force = e.target.checked; } }), 'force re-run'),
       h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: ui.noBumpers, onchange: e => { ui.noBumpers = e.target.checked; } }), 'no bumpers'),
       h('span', { class: 'spacer' }),
+      h('button', { class: 'btn', title: 'The narration as a large-print PDF, plus copies for a teleprompter', onclick: async () => {
+        const job = await runJob('script', [rel], ui.force ? { force: true } : {});
+        const done = await awaitJob(job.id);
+        await load();
+        if (done.state === 'done') toast('Recording script ready: see the links at the top of the Script pane.');
+        else toast('The recording script could not be made; see Jobs.', true);
+      } }, 'Recording script'),
+      h('button', { class: 'btn', title: `Title-card intro and outro videos, in ${ui.lang === 'en' ? 'English' : 'Mandarin'} (the language chosen on the left)`, onclick: async () => {
+        const args = { lang: ui.lang, ...(ui.force ? { force: true } : {}) };
+        const job = await runJob('bumpers', [rel], args);
+        const done = await awaitJob(job.id);
+        await load();
+        if (done.state === 'done') toast('Intro and outro ready: see the top of the Slides pane.');
+        else toast('The intro and outro could not be made; see Jobs.', true);
+      } }, 'Intro/outro'),
+      h('a', { class: 'btn', href: `#/prompt/${id}`, target: '_blank', title: 'Open the narration as a full-screen teleprompter in a new tab' }, 'Teleprompter'),
       h('button', { class: 'btn', onclick: runVerify }, 'Verify files'),
       h('a', { class: 'btn', href: `#/jobs` }, 'Jobs')));
   }
@@ -115,7 +131,14 @@ export function topicView(main, id, startAt) {
   function renderScript() {
     const show = data.show.results?.[0];
     const s = show?.[ui.scriptLang];
-    const head = h('div', { class: 'panel-head' }, h('h2', {}, 'Script'),
+    const scriptFiles = (data.status?.artifacts || []).filter(a => a.kind === 'script' && a.exists);
+    const label = { pdf: 'PDF', html: 'for teleprompter', txt: 'text' };
+    const head = h('div', { class: 'panel-head' }, h('span', { class: 'row' }, h('h2', {}, 'Script'),
+        h('a', { class: 'btn small', href: `#/edit/${id}?lang=${ui.scriptLang}`, title: 'Edit the script and slides' }, 'Edit')),
+      scriptFiles.length ? h('span', { class: 'small row' }, 'Recording script:',
+        scriptFiles.map(a => h('a', { href: `/files/${a.path}?v=${stamp(a.path)}`, target: '_blank',
+          ...(a.path.endsWith('.pdf') ? {} : { download: a.path.split('/').pop() }) }, label[a.path.split('.').pop()])),
+        scriptFiles[0].stale ? h('span', { class: 'chip stale' }, 'out of date') : null) : null,
       show?.zh ? h('span', { class: 'controls' }, h('span', { class: 'seg' }, ['en', 'zh'].map(l => h('button', {
         class: ui.scriptLang === l ? 'on' : '', onclick: () => { ui.scriptLang = l; renderScript(); } }, l.toUpperCase())))) : null);
     if (!s) { mount(els.script, head, h('div', { class: 'empty' }, ui.scriptLang === 'en' ? 'No topic.md yet. Paste it in Intake.' : 'No topic.zh.md yet.')); return; }
@@ -142,7 +165,8 @@ export function topicView(main, id, startAt) {
     const n = Math.max(en.length, zh.length);
     const head = h('div', { class: 'panel-head' }, h('h2', {}, 'Slides'),
       h('span', { class: 'muted small' }, n ? `${en.length} EN${zh.length ? ` · ${zh.length} ZH` : ''} · click to enlarge` : ''));
-    if (!n) { mount(els.slides, head, h('div', { class: 'empty' }, 'Not rendered yet.')); return; }
+    const intro = bumperRow('intro'), outro = bumperRow('outro');
+    if (!n) { mount(els.slides, head, h('div', { class: 'pane-scroll' }, intro, h('div', { class: 'empty' }, 'Not rendered yet.'), outro)); return; }
     const thumb = (lang, i) => {
       const src = r[lang]?.slides?.[i];
       const flags = r[lang]?.flagged?.[String(i + 1)] || [];
@@ -153,14 +177,38 @@ export function topicView(main, id, startAt) {
         h('span', { class: 'i' }, `${lang.toUpperCase()} ${i + 1}`),
         flags.length ? h('span', { class: `flag chip ${lvl === 'flagged' ? 'error' : 'warn'}` }, 'overflow') : null);
     };
-    const strip = h('div', { class: `strip${zh.length ? ' two' : ''}` });
+    // One row per slide, scrolling vertically like the script; Mandarin beside English at the same index.
+    const rows = [];
     for (let i = 0; i < n; i++) {
-      strip.append(thumb('en', i));
-      if (zh.length) strip.append(thumb('zh', i));
+      rows.push(h('div', { class: 'sslide slide-row', id: `slide-${i + 1}` },
+        h('div', { class: 'shead' }, h('span', { class: 'n' }, i + 1),
+          h('span', { class: 'muted small' }, show.en?.slides?.[i]?.title || '')),
+        h('div', { class: `slide-pair${zh.length ? ' two' : ''}` }, thumb('en', i), zh.length ? thumb('zh', i) : null)));
     }
-    strip.style.gridTemplateRows = zh.length ? 'auto auto' : 'auto';
-    mount(els.slides, head, strip,
-      zh.length ? h('p', { class: 'muted small', style: { padding: '0 14px 10px', margin: 0 } }, 'English above, Mandarin below, at the same index.') : null);
+    // In running order: the intro, the slides, then the outro.
+    mount(els.slides, head, h('div', { class: 'pane-scroll' }, intro, rows, outro));
+  }
+
+  // A bumper row from bcn bumpers, per language: the intro (the title card) or the outro
+  // (the logo card), each with its own still and video.
+  function bumperRow(kind) {
+    const arts = (data.status?.artifacts || []).filter(a => a.kind.startsWith('bumper') && a.exists);
+    const cardOf = (a) => a.kind === 'bumper_card' && a.path.includes(`.${kind}-card.`);
+    const langs = ['en', 'zh'].filter(l => arts.some(a => a.lang === l && cardOf(a)));
+    if (!langs.length) return null;
+    const card = (lang) => {
+      const mine = arts.filter(a => a.lang === lang);
+      const img = mine.find(cardOf);
+      const video = mine.find(a => a.path.endsWith(`.${kind}.${lang}.mp4`));
+      return h('div', {},
+        h('div', { class: 'thumb' }, h('img', { src: `/files/${img.path}?v=${stamp(img.path)}`, alt: `${lang.toUpperCase()} ${kind} title card`, loading: 'lazy' }),
+          h('span', { class: 'i' }, lang.toUpperCase()),
+          (img.stale || mine.find(a => a.path.endsWith(`.${kind}.${lang}.mp4`))?.stale) ? h('span', { class: 'flag chip stale' }, 'out of date') : null),
+        video ? h('div', { class: 'small row' }, h('a', { href: `/files/${video.path}?v=${stamp(video.path)}`, target: '_blank' }, `▶ play ${kind}`)) : null);
+    };
+    return h('div', { class: 'sslide slide-row', id: `slide-${kind}` },
+      h('div', { class: 'shead' }, h('span', { class: 'n' }, '◆'), h('span', { class: 'muted small' }, kind === 'intro' ? 'Intro · title' : 'Outro · logo')),
+      h('div', { class: `slide-pair${langs.length > 1 ? ' two' : ''}` }, langs.map(card)));
   }
 
   function lightbox(start) {
@@ -424,6 +472,10 @@ export function topicView(main, id, startAt) {
           h('div', { class: 'loc' }, [d.code, d.lang?.toUpperCase(), d.file ? `${d.file}${d.line ? ':' + d.line : ''}` : null,
             d.slide ? `slide ${d.slide}` : null, d.data?.step ? `from ${d.data.step}` : null].filter(Boolean).join(' · ')),
           d.hint ? h('div', { class: 'hint' }, d.hint) : null,
+          (d.file === 'topic.md' || d.file === 'topic.zh.md') ? h('a', { class: 'small',
+            href: `#/edit/${id}?lang=${d.file === 'topic.zh.md' ? 'zh' : 'en'}${d.line ? '&line=' + d.line : ''}` },
+            d.line ? `edit line ${d.line}` : 'edit script') : null,
+          ackControls(d),
           d.data?.time !== undefined && d.data?.time !== null ? h('a', { class: 'small', href: '#', onclick: (e) => {
             e.preventDefault(); location.hash = `#/topic/${id}?t=${d.data.time}`; } }, `play at ${fmtTime(d.data.time)}`) : null))))
         : h('div', { class: 'empty' }, 'Nothing outstanding.'));

@@ -18,10 +18,21 @@ bottom = 216
 en = 44
 zh = 50
 
+# Headings (slide titles, the intro title, the recording script's title) use this weight.
+# House style: Azo Sans, with titles in Azo Sans Black (900).
+title_weight = 900
+
 [fonts]
-# Font stack per language. The first family is also used for burned-in subtitles.
-en = ["Helvetica Neue", "Helvetica", "Arial", "sans-serif"]
-zh = ["Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "sans-serif"]
+# Font stack per language. Azo Sans is the house face; it has no Chinese, so in Mandarin
+# it sets any Latin text and Noto Sans SC sets the Chinese. Until the Azo Sans files are
+# added below (or the font is installed on this Mac), the next face in the list is used.
+en = ["Azo Sans", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"]
+zh = ["Azo Sans", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "sans-serif"]
+
+[subtitle_font]
+# The face for subtitles burned into draft videos; it must cover the language's script.
+en = "Azo Sans"
+zh = "Noto Sans SC"
 
 # Font files the theme carries, so a render does not depend on what the build
 # machine happens to have installed. Paths are relative to this directory.
@@ -35,3 +46,35 @@ weight = 400
 family = "Noto Sans SC"
 file = "fonts/NotoSansSC-Bold.otf"
 weight = 700
+
+# Azo Sans (commercial: check the university licence allows embedding in PDFs and video).
+# Put the files in fonts/ and uncomment, adjusting the file names to match.
+# [[font_face]]
+# family = "Azo Sans"
+# file = "fonts/AzoSans-Regular.otf"
+# weight = 400
+#
+# [[font_face]]
+# family = "Azo Sans"
+# file = "fonts/AzoSans-Bold.otf"
+# weight = 700
+#
+# [[font_face]]
+# family = "Azo Sans"
+# file = "fonts/AzoSans-Black.otf"   # titles
+# weight = 900
+
+[bumper]
+# The intro and outro for each topic (bcn bumpers), faded in and out. The intro is the topic
+# title over the background video; the outro is the logo alone. Paths are relative to this
+# directory: ../../../assets/ is the assets folder at the top of the project. Size and frame
+# rate come from [delivery] in programme.toml.
+background_video = "../../../assets/background.mp4"
+# The logo must be PNG or SVG: a browser cannot draw the EPS versions.
+logo = "../../../assets/NU_Logo_White.svg"
+logo_height = 320        # pixels at the slide resolution
+background = "#000000"   # the outro (dark, for the white logo); also the intro without a video
+color = "#ffffff"        # intro title, over the background video
+intro_seconds = 5.0
+outro_seconds = 5.0
+fade_seconds = 0.75      # from and to black, at each end

@@ -43,6 +43,7 @@ class Slide:
     say_blocks: int = 0
     say_line: int | None = None
     say_text: str = ""
+    say_paragraphs: list[str] = field(default_factory=list)  # blank "> " lines split paragraphs
     images: list[Image] = field(default_factory=list)
     list_items: int = 0
 
@@ -204,6 +205,13 @@ def parse(path: Path, rel: str | None = None, topic_id: str | None = None, text:
         while slide.lines and not slide.lines[0][1].strip():
             slide.lines.pop(0)
         slide.say_text = " ".join(p for p in say_parts if p).strip()
+        paras: list[list[str]] = [[]]
+        for part in say_parts:
+            if part:
+                paras[-1].append(part)
+            elif paras[-1]:
+                paras.append([])
+        slide.say_paragraphs = [" ".join(ps) for ps in paras if ps]
         slides.append(slide)
 
     return ParsedTopic(path, front, front_lines, slides, diags, body_start, lines)

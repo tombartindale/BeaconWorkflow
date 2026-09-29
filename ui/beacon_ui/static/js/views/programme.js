@@ -1,5 +1,5 @@
 // Programme: the landing screen. Four numbers, then one row per module. Rows are links and nothing else.
-import { h, mount, store, subscribe, STAGE_LABEL } from '../core.js';
+import { api, fmtAgo, h, mount, store, subscribe, STAGE_LABEL } from '../core.js';
 
 // A neutral ramp: later stages darker. Colour is kept for stale and blocked elsewhere.
 const RAMP = {
@@ -25,6 +25,24 @@ function kpi(value, label, sub, alert = false) {
 }
 
 export function programmeView(main) {
+  let sync = null; // bcn sync dry runs, for the OneDrive line
+  const loadSync = () => api('/api/sync').then(d => { sync = d; render(); }).catch(() => {});
+
+  function syncLine() {
+    if (!sync) return null;
+    const pull = sync.pull, push = sync.push;
+    if ((pull.diagnostics || []).some(d => d.code === 'SYNC_NOT_CONFIGURED')) return null;
+    const n = (env) => (env.plan || []).filter(p => p.action === 'copy' || p.action === 'check').length;
+    const conflicts = (pull.plan || []).filter(p => p.action === 'conflict').length;
+    return h('a', { class: 'panel row', href: '#/sync', style: { padding: '10px 16px', marginBottom: '16px', color: 'inherit' } },
+      h('strong', {}, 'OneDrive'),
+      h('span', { class: 'muted' }, pull.last_pull ? `last pulled ${fmtAgo(pull.last_pull)}` : 'never pulled'),
+      n(pull) ? h('span', { class: 'chip warn' }, `${n(pull)} to pull`) : h('span', { class: 'chip ok' }, 'up to date'),
+      n(push) ? h('span', { class: 'chip' }, `${n(push)} to push`) : null,
+      conflicts ? h('span', { class: 'chip error' }, `${conflicts} conflict${conflicts === 1 ? '' : 's'}`) : null,
+      h('span', { class: 'spacer' }), h('span', { class: 'small' }, 'Sync →'));
+  }
+
   const render = () => {
     const env = store.status;
     if (!env) { mount(main, h('div', { class: 'empty' }, 'Reading the programme…')); return; }
@@ -49,7 +67,7 @@ export function programmeView(main) {
           m.stale ? h('span', { class: 'chip stale' }, `${m.stale} stale`) : null,
           m.cloud ? h('span', { class: 'chip cloud' }, `☁ ${m.cloud} cloud-only`) : null,
           m.unreviewed ? h('span', { class: 'chip warn' }, `${m.unreviewed} to proofread`) : null,
-          m.errors ? h('span', { class: 'chip error' }, `course map: ${m.errors} errors`) : null)));
+          m.errors ? h('span', { class: 'chip error', title: 'Open the module to see its documents and their problems' }, `module documents: ${m.errors} error${m.errors === 1 ? '' : 's'}`) : null)));
 
     const legend = (stages, lang) => h('div', { class: 'legend' }, h('strong', {}, lang.toUpperCase()),
       stages.map((st, i) => h('span', {}, h('i', { style: { background: RAMP[lang][i] } }), STAGE_LABEL[st])));
@@ -57,6 +75,7 @@ export function programmeView(main) {
     mount(main,
       h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Programme'),
         h('div', { class: 'sub' }, `${s.topics} topics across ${Object.keys(s.modules).length} modules`))),
+      syncLine(),
       h('div', { class: 'kpis' },
         kpi(`${s.complete.en} / ${s.complete.zh}`, 'Topics complete', 'English / Mandarin'),
         kpi(s.blocked, 'Topics blocked', 'need a person', s.blocked > 0),
@@ -67,6 +86,7 @@ export function programmeView(main) {
         legend(stagesEn, 'en'), legend(stagesZh, 'zh')));
   };
   render();
-  const off = subscribe(kind => { if (kind === 'status' || kind === 'jobs') render(); });
+  loadSync();
+  const off = subscribe(kind => { if (kind === 'status' || kind === 'jobs') render(); if (kind === 'status') loadSync(); });
   return { dispose: off };
 }

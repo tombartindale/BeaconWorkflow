@@ -15,8 +15,8 @@ section {
   height: 1080px;
   box-sizing: border-box;
   padding: 96px 128px calc(var(--bcn-safe-bottom, 216px) + 40px) 128px;
-  background: #f7f5f0;
-  color: #1d2b36;
+  background: #000000;
+  color: #ffffff;
   font-size: var(--bcn-font-size, 44px);
   line-height: 1.35;
   display: flex;
@@ -33,13 +33,13 @@ section::before {
   top: 64px;
   width: 120px;
   height: 8px;
-  background: #2a6f97;
+  background: #ffffff;
 }
 
 h1, h2, h3 {
   margin: 0 0 0.3em;
   line-height: 1.15;
-  color: #12344d;
+  color: #ffffff;
   font-weight: 900; /* house style: titles in Azo Sans Black (theme.toml title_weight) */
 }
 
@@ -55,10 +55,10 @@ ul, ol {
 }
 
 li { margin: 0.2em 0; }
-li::marker { color: #2a6f97; }
+li::marker { color: #ffffff; }
 
-strong { color: #12344d; }
-em { color: #2a6f97; font-style: normal; }
+strong { color: #cccccc; }
+em { color: #cccccc; font-style: normal; }
 
 p:has(> img:only-child) { text-align: center; }
 

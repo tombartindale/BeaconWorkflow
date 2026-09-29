@@ -72,7 +72,7 @@ weight = 700
 background_video = "../../../assets/background.mp4"
 # The logo must be PNG or SVG: a browser cannot draw the EPS versions.
 logo = "../../../assets/NU_Logo_White.svg"
-logo_height = 320        # pixels at the slide resolution
+logo_height = 240        # pixels at the slide resolution
 background = "#000000"   # the outro (dark, for the white logo); also the intro without a video
 color = "#ffffff"        # intro title, over the background video
 intro_seconds = 5.0

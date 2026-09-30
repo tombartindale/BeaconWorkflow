@@ -26,6 +26,9 @@ export async function main(argv: string[]): Promise<number> {
     ({ values } = parseArgs({ args: argv, options: {
       root: { type: 'string' }, port: { type: 'string' }, host: { type: 'string' }, bcn: { type: 'string' },
       'data-dir': { type: 'string' }, 'static-dir': { type: 'string' }, help: { type: 'boolean', short: 'h' },
+      // Undocumented on purpose: only the test suite passes this, to exercise the API
+      // without a browser session. Never set it in a real deployment.
+      'test-disable-auth': { type: 'boolean' },
     } }));
   } catch (e) {
     process.stderr.write(`beacon-ui: ${(e as Error).message}\n${USAGE}\n`);
@@ -38,7 +41,8 @@ export async function main(argv: string[]): Promise<number> {
   const port = Number(values.port || process.env.BEACON_PORT || 8420);
   try {
     const dataDir = values['data-dir'] ? resolve(values['data-dir']) : defaultDataDir(root);
-    const server = await createServer({ root, port, host: values.host, dataDir, bcn: locateBcn(values.bcn), staticDir: values['static-dir'] });
+    const server = await createServer({ root, port, host: values.host, dataDir, bcn: locateBcn(values.bcn), staticDir: values['static-dir'],
+      testDisableAuth: values['test-disable-auth'] });
     process.stderr.write(`Beacon UI for ${server.app.root}\n  ${server.url}\n  data: ${dataDir}\n`);
     for (const w of server.app.warnings) process.stderr.write(`  warning: ${w}\n`);
     const stop = () => { void server.close().finally(() => process.exit(0)); };

@@ -16,6 +16,12 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     headers['Content-Type'] = 'application/json';
   }
   const res = await fetch(path, { method: init.method ?? (body ? 'POST' : 'GET'), headers, body });
+  if (res.status === 401 && !path.startsWith('/api/auth/')) {
+    // The session cookie is missing or expired: a full reload is simplest and correct
+    // here, since it also drops any in-memory app state built for the previous session.
+    window.location.href = '/login.html';
+    return new Promise<T>(() => { /* navigating away; never resolves */ });
+  }
   const text = await res.text();
   let data: unknown = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = { error: text }; }

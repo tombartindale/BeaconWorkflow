@@ -43,7 +43,9 @@ export async function startBackend(): Promise<Backend> {
   // Timestamps are kept so staleness comes out the same in every copy.
   cpSync(join(REPO, 'example'), root, { recursive: true, preserveTimestamps: true });
   const port = await freePort();
-  const args = ['--root', root, '--port', String(port), '--data-dir', dataDir];
+  // --test-disable-auth: the contract suite exercises the API directly, without a browser
+  // to hold a session cookie from the magic-link login flow (see server.ts's auth gate).
+  const args = ['--root', root, '--port', String(port), '--data-dir', dataDir, '--test-disable-auth'];
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL must point at a Postgres instance to run these tests; see the TODO at the top of this file.');
   const child: ChildProcess = spawn(process.execPath, ['--import', 'tsx', join(REPO, 'ui', 'server', 'src', 'cli.ts'), ...args],
     { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, BCN: join(REPO, 'tooling', '.venv', 'bin', 'bcn') } });

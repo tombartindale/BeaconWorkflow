@@ -201,7 +201,7 @@ describe('paths', () => {
 describe('shutdown', () => {
   it('closes promptly with a live event stream open', async () => {
     const { createServer } = await import('../src/index.js');
-    const server = await createServer({ root, bcn: FAKE, dataDir, port: 0 });
+    const server = await createServer({ root, bcn: FAKE, dataDir, port: 0, testDisableAuth: true });
     const ctrl = new AbortController();
     const res = await fetch(`${server.url}/api/events`, { signal: ctrl.signal });
     await res.body!.getReader().read();

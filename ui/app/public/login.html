@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — Beacon</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;
+    background: #f7f5f0; color: #12344d;
+  }
+  main { max-width: 360px; width: 100%; padding: 2rem; box-sizing: border-box; }
+  h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
+  p { color: #4a5a68; line-height: 1.4; }
+  input {
+    width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem; font-size: 1rem;
+    border: 1px solid #ccc; border-radius: 6px; margin: 0.75rem 0;
+  }
+  button {
+    width: 100%; padding: 0.6rem; font-size: 1rem; border: none; border-radius: 6px;
+    background: #12344d; color: white; cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
+  #message { min-height: 1.5rem; font-size: 0.9rem; }
+  #message.error { color: #b3261e; }
+  #message.ok { color: #2e7d32; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sign in to Beacon</h1>
+  <p>Enter your email address and we'll send you a one-time sign-in link.</p>
+  <form id="form">
+    <input type="email" id="email" placeholder="you@northumbria.ac.uk" required autofocus>
+    <button type="submit" id="submit">Send sign-in link</button>
+  </form>
+  <p id="message" role="status"></p>
+</main>
+<script>
+  const form = document.getElementById('form');
+  const email = document.getElementById('email');
+  const submit = document.getElementById('submit');
+  const message = document.getElementById('message');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submit.disabled = true;
+    message.className = '';
+    message.textContent = 'Sending…';
+    try {
+      const res = await fetch('/api/auth/request-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.value }),
+      });
+      if (!res.ok) throw new Error('Something went wrong. Try again.');
+      message.className = 'ok';
+      message.textContent = 'If that address is allowed, a sign-in link is on its way. Check your inbox.';
+    } catch (err) {
+      message.className = 'error';
+      message.textContent = err.message || 'Something went wrong. Try again.';
+    } finally {
+      submit.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

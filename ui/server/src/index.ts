@@ -21,6 +21,8 @@ export interface CreateServerOptions {
   port: number;
   host?: string;          // localhost only; see the README before changing it
   staticDir?: string;
+  /** Test-only: see ServerOptions.testDisableAuth in server.ts. */
+  testDisableAuth?: boolean;
 }
 
 export interface BeaconServer {
@@ -39,7 +41,7 @@ export async function createServer(opts: CreateServerOptions): Promise<BeaconSer
   const app = redisBus
     ? await App.create({ root: opts.root, bcn: opts.bcn, dataDir: opts.dataDir }, redisBus)
     : await App.create({ root: opts.root, bcn: opts.bcn, dataDir: opts.dataDir });
-  const http = await buildServer({ app, staticDir: opts.staticDir ?? DEFAULT_STATIC_DIR });
+  const http = await buildServer({ app, staticDir: opts.staticDir ?? DEFAULT_STATIC_DIR, testDisableAuth: opts.testDisableAuth });
   const host = opts.host ?? '127.0.0.1';
   await http.listen({ host, port: opts.port });
   app.start();

@@ -10,12 +10,14 @@ import { readFile } from 'node:fs/promises';
 import type { IncomingMessage } from 'node:http';
 import { basename, extname, join, relative, resolve, sep } from 'node:path';
 import { pipeline } from 'node:stream/promises';
+import cookie from '@fastify/cookie';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import type {
   BcnDiagnosticsEnvelope, BcnEditEnvelope, BcnReviewEnvelope, BcnStatusEnvelope, BcnSyncEnvelope, BootResponse, JobArgs,
   ShowEnvelope, TranslationItem,
 } from '@beacon/shared';
 import { jobLabel, type App } from './app.js';
+import { SESSION_COOKIE } from './auth.js';
 import { BadRequest, BcnError, Forbidden } from './errors.js';
 import { mimeType, withCharset } from './mime.js';
 import { now, pyJson, sha256, stamp } from './util.js';
@@ -74,11 +76,24 @@ function toInt(value: unknown, name: string): number {
 }
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-export interface ServerOptions { app: App; staticDir?: string }
+export interface ServerOptions {
+  app: App;
+  staticDir?: string;
+  /** Test-only: skips the session check entirely. Never read from an environment
+   *  variable, so it can only be turned on by a test harness passing it explicitly,
+   *  never by an environment misconfiguration in a real deployment. */
+  testDisableAuth?: boolean;
+}
 
-export async function buildServer({ app, staticDir }: ServerOptions): Promise<FastifyInstance> {
+// Reachable without a session: the login flow itself, and the SPA shell/static assets
+// (the app needs to load far enough to show a login form). Every other /api/* route
+// requires a valid session cookie.
+const PUBLIC_PATHS = new Set(['/api/auth/request-link', '/api/auth/verify', '/api/auth/logout', '/api/auth/me']);
+
+export async function buildServer({ app, staticDir, testDisableAuth }: ServerOptions): Promise<FastifyInstance> {
   // Live event streams never finish by themselves, so closing must not wait for them.
   const f = Fastify({ logger: false, exposeHeadRoutes: true, bodyLimit: UPLOAD_MAX, forceCloseConnections: true });
+  await f.register(cookie);
   const streams = new Set<import('node:http').ServerResponse>();
   f.addHook('onClose', async () => { for (const res of streams) res.end(); });
   f.removeAllContentTypeParsers();
@@ -88,6 +103,13 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
     if (!allowed(req)) return reply.code(403).send({ error: 'Requests are accepted from localhost only.' });
     reply.header('Cache-Control', 'no-store');
     reply.header('X-Content-Type-Options', 'nosniff');
+    const path = (req.raw.url || '').split('?')[0];
+    const guarded = !testDisableAuth && (path.startsWith('/files/') || (path.startsWith('/api/') && !PUBLIC_PATHS.has(path)));
+    if (guarded) {
+      const session = await app.auth.session(req.cookies[SESSION_COOKIE]);
+      if (!session) return reply.code(401).send({ error: 'Sign in required.' });
+      (req as FastifyRequest & { email?: string }).email = session.email;
+    }
   });
 
   f.setErrorHandler((err: Error & { statusCode?: number }, _req, reply) => {
@@ -99,6 +121,39 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
   });
 
   f.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: 'Not found.' }));
+
+  // -- login (email magic link) ----------------------------------------------------------------
+  const cookieOpts = { path: '/', httpOnly: true, sameSite: 'lax' as const, secure: app.auth.cookieSecure };
+
+  f.post('/api/auth/request-link', async (req) => {
+    const data = await readJson(req);
+    const email = typeof data.email === 'string' ? data.email : '';
+    await app.auth.requestLink(email);
+    // Deliberately the same response whether or not the address is allowed or exists, so
+    // this endpoint cannot be used to enumerate valid addresses.
+    return { ok: true };
+  });
+
+  f.get('/api/auth/verify', async (req: Req, reply) => {
+    const token = String(req.query.token || '');
+    const sessionToken = await app.auth.verify(token);
+    if (!sessionToken) return reply.type('text/html; charset=utf-8').code(400)
+      .send('<!doctype html><title>Sign-in link expired</title><p>This sign-in link is invalid or has expired. '
+        + 'Go back and request a new one.</p>');
+    reply.setCookie(SESSION_COOKIE, sessionToken, cookieOpts);
+    return reply.redirect('/');
+  });
+
+  f.get('/api/auth/me', async (req: Req) => {
+    const session = await app.auth.session(req.cookies[SESSION_COOKIE]);
+    return { email: session?.email ?? null };
+  });
+
+  f.post('/api/auth/logout', async (req: Req, reply) => {
+    await app.auth.logout(req.cookies[SESSION_COOKIE]);
+    reply.clearCookie(SESSION_COOKIE, { path: '/' });
+    return { ok: true };
+  });
 
   // -- API ------------------------------------------------------------------------------------
   f.get('/api/boot', async (): Promise<BootResponse> => ({

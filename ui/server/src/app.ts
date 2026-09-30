@@ -4,6 +4,7 @@ import { existsSync, readdirSync, realpathSync, statSync, unlinkSync, writeFileS
 import { homedir } from 'node:os';
 import { basename, join, resolve, sep } from 'node:path';
 import type { CodeInfo, DoctorEnvelope, JobArgs, JobSummary, Queried } from '@beacon/shared';
+import { Auth, authOptionsFromEnv } from './auth.js';
 import { Bcn } from './bcn.js';
 import { Bus, type EventBus } from './bus.js';
 import { DB } from './db.js';
@@ -70,6 +71,7 @@ export class App {
   readonly status: StatusCache;
   readonly jobs: JobQueue;
   readonly watcher: Watcher;
+  readonly auth: Auth;
   doctor: Queried<DoctorEnvelope> | null = null;
   codes: CodeInfo[] = [];
   private queryCache = new Map<string, { at: number; env: Record<string, unknown> }>();
@@ -84,6 +86,7 @@ export class App {
     this.status = new StatusCache(this.bcn, this.bus, async () => Number((await this.db.prefs()).poll_seconds) || 15);
     this.jobs = new JobQueue(db, this.bus);
     this.watcher = new Watcher(this.root, (reason) => { void this.status.refresh(reason); });
+    this.auth = new Auth(db, authOptionsFromEnv());
     // The worker running a job publishes its completion on the bus (Redis, if the worker is
     // a separate process) rather than calling back into this process directly.
     this.bus.subscribe((ev) => {
@@ -96,6 +99,7 @@ export class App {
     if (!connectionString) throw new StartupError('DATABASE_URL is required (a Postgres connection string).');
     const db = new DB(connectionString);
     await db.init();
+    await Auth.init(db);
     return new App(opts, db, bus);
   }
 

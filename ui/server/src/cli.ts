@@ -1,27 +1,30 @@
 // beacon-ui --root /path/to/programme
 //
-// Serves the UI on http://127.0.0.1:8420. Localhost only, single user, no
-// authentication: see the README before changing any of that.
+// Serves the UI (the API half only — see worker.ts for the process that actually runs
+// bcn). Binds to 127.0.0.1 by default; pass --host to bind elsewhere, e.g. behind a
+// reverse proxy in a multi-user deployment. See the README before exposing it directly.
 import { parseArgs } from 'node:util';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createServer, defaultDataDir, locateBcn, StartupError } from './index.js';
 
-const USAGE = `usage: beacon-ui --root PATH [--port 8420] [--bcn PATH] [--data-dir PATH] [--static-dir PATH]
+const USAGE = `usage: beacon-ui --root PATH [--port 8420] [--host 127.0.0.1] [--bcn PATH] [--data-dir PATH] [--static-dir PATH]
 
   --root        programme root (holds programme.toml); or set BEACON_ROOT
-  --port        port on 127.0.0.1 (default 8420, or BEACON_PORT)
+  --port        port to bind (default 8420, or BEACON_PORT)
+  --host        address to bind (default 127.0.0.1)
   --bcn         path to the bcn executable (default: $BCN, tooling/.venv/bin/bcn, then PATH)
   --data-dir    where the UI keeps its pastes
   --static-dir  the built app to serve (default ui/app/dist/spa)
 
-  DATABASE_URL  Postgres connection string for job history and preferences (required)`;
+  DATABASE_URL  Postgres connection string for job history and preferences (required)
+  REDIS_URL     enables live job progress across multiple api/worker processes (optional)`;
 
 export async function main(argv: string[]): Promise<number> {
   let values;
   try {
     ({ values } = parseArgs({ args: argv, options: {
-      root: { type: 'string' }, port: { type: 'string' }, bcn: { type: 'string' },
+      root: { type: 'string' }, port: { type: 'string' }, host: { type: 'string' }, bcn: { type: 'string' },
       'data-dir': { type: 'string' }, 'static-dir': { type: 'string' }, help: { type: 'boolean', short: 'h' },
     } }));
   } catch (e) {
@@ -35,7 +38,7 @@ export async function main(argv: string[]): Promise<number> {
   const port = Number(values.port || process.env.BEACON_PORT || 8420);
   try {
     const dataDir = values['data-dir'] ? resolve(values['data-dir']) : defaultDataDir(root);
-    const server = await createServer({ root, port, dataDir, bcn: locateBcn(values.bcn), staticDir: values['static-dir'] });
+    const server = await createServer({ root, port, host: values.host, dataDir, bcn: locateBcn(values.bcn), staticDir: values['static-dir'] });
     process.stderr.write(`Beacon UI for ${server.app.root}\n  ${server.url}\n  data: ${dataDir}\n`);
     for (const w of server.app.warnings) process.stderr.write(`  warning: ${w}\n`);
     const stop = () => { void server.close().finally(() => process.exit(0)); };

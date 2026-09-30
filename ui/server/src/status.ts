@@ -5,7 +5,7 @@
 // with a short TTL so moving between views does not rescan.
 import type { Queried, StatusEnvelope as BcnStatusEnvelope } from '@beacon/shared';
 import type { Bcn } from './bcn.js';
-import type { Bus } from './bus.js';
+import type { EventBus } from './bus.js';
 import { BcnError } from './errors.js';
 import { sha1 } from './util.js';
 
@@ -21,7 +21,7 @@ export class StatusCache {
   version = 0;
   error: string | null = null;
 
-  constructor(private bcn: Bcn, private bus: Bus, private pollSeconds: () => Promise<number>) {}
+  constructor(private bcn: Bcn, private bus: EventBus, private pollSeconds: () => Promise<number>) {}
 
   start(): void {
     const tick = () => {

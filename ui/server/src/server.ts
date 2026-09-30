@@ -1,7 +1,10 @@
 // HTTP server: JSON API, server-sent events, the app, and files from the root.
 //
-// Single user, bound to localhost, no authentication. Requests with a foreign Host or
-// Origin header are refused so a web page elsewhere cannot drive it.
+// Host/Origin are still checked (so a foreign web page cannot drive this API from a
+// victim's browser via CSRF-style requests), but the allowed hostnames are configurable
+// via ALLOWED_HOSTS, since this now typically runs behind a reverse proxy on a real
+// hostname rather than only ever being reached at localhost. Login (see auth.ts) is the
+// actual access control; this check is a defense-in-depth CSRF guard, not the only gate.
 import { createReadStream, createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import type { IncomingMessage } from 'node:http';
@@ -24,6 +27,9 @@ const TOPIC = '^[A-Z]{2}\\d{4}-U\\d{2}-T\\d{2}$';
 const PING_MS = 15_000;
 const SSE_BACKLOG = 4 * 1024 * 1024;  // a tab that falls this far behind is dropped; it resyncs on reconnect
 
+/** localhost, plus any hostnames in ALLOWED_HOSTS (comma-separated, e.g. beacon.example.org). */
+const ALLOWED_HOSTS = new Set([...LOCAL_HOSTS, ...(process.env.ALLOWED_HOSTS || '').split(',').map((h) => h.trim()).filter(Boolean)]);
+
 type Query = Record<string, string | undefined>;
 type Req = FastifyRequest<{ Params: Record<string, string>; Querystring: Query }>;
 
@@ -33,11 +39,11 @@ function hostname(value: string): string {
 }
 
 function allowed(req: FastifyRequest): boolean {
-  if (!LOCAL_HOSTS.has(hostname(req.headers.host || ''))) return false;
+  if (!ALLOWED_HOSTS.has(hostname(req.headers.host || ''))) return false;
   const origin = req.headers.origin;
   if (origin) {
     try {
-      if (!LOCAL_HOSTS.has(new URL(origin).hostname)) return false;
+      if (!ALLOWED_HOSTS.has(new URL(origin).hostname)) return false;
     } catch { return false; }
   }
   return true;
@@ -103,7 +109,7 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
   f.get('/api/status', async (_req, reply) => {
     const env = await app.status.get();
     if (!env) return reply.code(503).send({ error: app.status.error || 'Status is not available yet.' });
-    return { ...env, version: app.status.version, jobs_running: app.jobs.running() };
+    return { ...env, version: app.status.version, jobs_running: await app.jobs.running() };
   });
 
   f.post('/api/status/refresh', async () => {
@@ -288,6 +294,7 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
     res.write(`event: hello\ndata: ${pyJson({ status_version: app.status.version })}\n\n`);
     const off = app.bus.subscribe((ev) => {
+      if (ev.type === 'job-wake') return;  // internal, for workers only: never sent to the browser
       if (res.writableLength > SSE_BACKLOG) { res.destroy(); return false; }
       res.write(`data: ${JSON.stringify(ev)}\n\n`);
     });

@@ -5,7 +5,7 @@ import { homedir } from 'node:os';
 import { basename, join, resolve, sep } from 'node:path';
 import type { CodeInfo, DoctorEnvelope, JobArgs, JobSummary, Queried } from '@beacon/shared';
 import { Bcn } from './bcn.js';
-import { Bus } from './bus.js';
+import { Bus, type EventBus } from './bus.js';
 import { DB } from './db.js';
 import { BadRequest, BcnError, Forbidden, StartupError } from './errors.js';
 import { JobQueue } from './jobs.js';
@@ -65,45 +65,48 @@ export class App {
   readonly dataDir: string;
   readonly warnings: string[];
   readonly db: DB;
-  readonly bus = new Bus();
+  readonly bus: EventBus;
   readonly bcn: Bcn;
   readonly status: StatusCache;
-  jobs!: JobQueue;
+  readonly jobs: JobQueue;
   readonly watcher: Watcher;
   doctor: Queried<DoctorEnvelope> | null = null;
   codes: CodeInfo[] = [];
   private queryCache = new Map<string, { at: number; env: Record<string, unknown> }>();
 
-  private constructor(opts: AppOptions, db: DB) {
+  private constructor(opts: AppOptions, db: DB, bus: EventBus) {
     this.warnings = checkRoot(resolve(opts.root));
     this.root = realpathSync(resolve(opts.root));
     this.dataDir = opts.dataDir;
     this.db = db;
+    this.bus = bus;
     this.bcn = new Bcn(opts.bcn, this.root);
     this.status = new StatusCache(this.bcn, this.bus, async () => Number((await this.db.prefs()).poll_seconds) || 15);
+    this.jobs = new JobQueue(db, this.bus);
     this.watcher = new Watcher(this.root, (reason) => { void this.status.refresh(reason); });
+    // The worker running a job publishes its completion on the bus (Redis, if the worker is
+    // a separate process) rather than calling back into this process directly.
+    this.bus.subscribe((ev) => {
+      if (ev.type === 'job' && ['done', 'failed', 'cancelled'].includes(ev.job.state)) this.jobFinished(ev.job);
+    });
   }
 
-  static async create(opts: AppOptions): Promise<App> {
+  static async create(opts: AppOptions, bus: EventBus = new Bus()): Promise<App> {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new StartupError('DATABASE_URL is required (a Postgres connection string).');
     const db = new DB(connectionString);
     await db.init();
-    const app = new App(opts, db);
-    app.jobs = await JobQueue.create(db, app.bus, app.bcn, app.root, () => db.prefs(), (job) => app.jobFinished(job));
-    return app;
+    return new App(opts, db, bus);
   }
 
   start(): void {
     this.status.start();
-    this.jobs.start();
     this.watcher.start();
     void this.warm();
   }
 
   async stop(): Promise<void> {
     this.status.stop();
-    this.jobs.stop();
     this.watcher.stop();
     await this.db.close();
   }

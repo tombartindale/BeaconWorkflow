@@ -1,7 +1,7 @@
 {
   "name": "@beacon/server",
   "private": true,
-  "description": "Beacon UI backend: runs bcn, queues jobs, streams progress, serves the app. Localhost only, single user.",
+  "description": "Beacon UI backend: enqueues jobs and streams progress (api) or runs bcn for queued jobs (worker).",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,6 +16,7 @@
   "dependencies": {
     "@fastify/static": "10.1.5",
     "fastify": "5.12.5",
+    "ioredis": "5.11.1",
     "pg": "8.23.0"
   },
   "devDependencies": {

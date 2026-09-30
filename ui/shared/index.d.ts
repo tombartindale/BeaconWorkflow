@@ -192,4 +192,8 @@ export type ServerEvent =
   | { type: 'status-error'; error: string }
   | { type: 'job'; job: JobSummary }
   | { type: 'job-event'; job: number; target_index: number; target_count: number; event: BcnEvent }
-  | { type: 'warnings'; warnings: string[] };
+  | { type: 'warnings'; warnings: string[] }
+  // Internal: tells a worker process to check for queued jobs now rather than on its next
+  // poll. Carried over the same bus as browser-facing events for simplicity, but the
+  // browser's SSE route ignores it (see server.ts's /api/events handler).
+  | { type: 'job-wake' };

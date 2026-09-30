@@ -1,17 +1,22 @@
-// The job queue and path safety, against a stand-in bcn whose timing the tests control.
+// The job queue (App/JobQueue: submit, cancel, read) and the worker (Scheduler: dequeue,
+// run bcn, overlap enforcement) together, against a stand-in bcn whose timing the tests
+// control. Job execution lives in Scheduler, not JobQueue, since a worker is now a
+// separate process from the API in the real deployment (see src/worker.ts) — tests start
+// both against the same DATABASE_URL/root to exercise the whole path end to end.
 //
-// TODO(postgres): App/DB now talk to Postgres (see src/app.ts, src/db.ts), so these tests
-// need DATABASE_URL to point at a real or containerized Postgres instance to run - see the
-// TODO in test/harness.ts for how to stand one up locally. This file otherwise only needed
-// updating to the async App.create()/DB API shapes; it does not itself set up Postgres.
+// TODO(postgres): needs DATABASE_URL to point at a real or containerized Postgres
+// instance to run - see the TODO in test/harness.ts for how to stand one up locally.
 import { cpSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from '../src/app.js';
+import { Bcn } from '../src/bcn.js';
+import { Bus } from '../src/bus.js';
 import { DB } from '../src/db.js';
 import { Forbidden } from '../src/errors.js';
 import { overlaps } from '../src/jobs.js';
+import { Scheduler } from '../src/scheduler.js';
 import { sleep } from '../src/util.js';
 import { REPO } from './harness.js';
 
@@ -22,11 +27,21 @@ let root: string;
 let dataDir: string;
 let logFile: string;
 const apps: App[] = [];
+const schedulers: Scheduler[] = [];
 
 async function makeApp(): Promise<App> {
   const app = await App.create({ root, bcn: FAKE, dataDir });
   apps.push(app);
   return app;
+}
+
+/** Starts a worker scheduler sharing the given app's bus/db/root, as a separate worker
+ *  process would in the real deployment. */
+function startScheduler(app: App): Scheduler {
+  const scheduler = new Scheduler(app.db, app.bus, new Bcn(FAKE, app.root), app.root, () => app.db.prefs());
+  scheduler.start();
+  schedulers.push(scheduler);
+  return scheduler;
 }
 const events = () => (existsSync(logFile) ? readFileSync(logFile, 'utf8').trim().split('\n') : []);
 async function until(check: () => boolean | Promise<boolean>, ms = 10_000) {
@@ -48,6 +63,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  for (const scheduler of schedulers.splice(0)) { try { await scheduler.stop(); } catch { /* already stopped */ } }
   for (const app of apps.splice(0)) { try { await app.stop(); } catch { /* already stopped */ } }
   rmSync(base, { recursive: true, force: true });
 });
@@ -67,7 +83,7 @@ describe('job queue', () => {
   it('runs jobs in parallel but never two on the same topic', async () => {
     const app = await makeApp();
     await app.db.setPrefs({ parallel_jobs: 2 });
-    app.jobs.start();
+    startScheduler(app);
     const a = await app.jobs.submit('validate', ['KV7015/U01'], {}, 'a', 't');
     const b = await app.jobs.submit('validate', ['KV7015/U01/T01'], {}, 'b', 't');
     const c = await app.jobs.submit('validate', ['KV7015/U02'], {}, 'c', 't');
@@ -85,7 +101,7 @@ describe('job queue', () => {
   it('respects the parallel limit', async () => {
     const app = await makeApp();
     await app.db.setPrefs({ parallel_jobs: 1 });
-    app.jobs.start();
+    startScheduler(app);
     const a = await app.jobs.submit('validate', ['KV7015/U01'], {}, 'a', 't');
     const b = await app.jobs.submit('validate', ['KV7015/U02'], {}, 'b', 't');
     await until(async () => (await app.jobs.get(a.id))!.state === 'running');
@@ -97,7 +113,7 @@ describe('job queue', () => {
   it('cancelling a running job sends SIGINT and lets bcn finish its envelope', async () => {
     process.env.FAKE_BCN_MS = '20000';
     const app = await makeApp();
-    app.jobs.start();
+    startScheduler(app);
     const j = await app.jobs.submit('render', ['KV7015/U01/T01'], {}, 'r', 't');
     await until(() => events().some((e) => e.startsWith('start')));
     await app.jobs.cancel(j.id);
@@ -111,7 +127,7 @@ describe('job queue', () => {
   it('cancelling a queued job never runs it', async () => {
     const app = await makeApp();
     await app.db.setPrefs({ parallel_jobs: 1 });
-    app.jobs.start();
+    startScheduler(app);
     await app.jobs.submit('validate', ['KV7015/U01'], {}, 'a', 't');
     const b = await app.jobs.submit('validate', ['KV7015/U02'], {}, 'b', 't');
     expect((await app.jobs.cancel(b.id))!.state).toBe('cancelled');
@@ -127,7 +143,7 @@ describe('job queue', () => {
       seen.push(ev.type);
       if (ev.type === 'job-event' && ev.event.event === 'progress') progress.push(ev.event);
     });
-    app.jobs.start();
+    startScheduler(app);
     const j = await app.jobs.submit('validate', ['KV7015/U01/T01'], { lang: 'en' }, 'v', 't');
     await until(async () => (await app.jobs.get(j.id))!.state === 'done');
     expect(seen).toContain('job-event');
@@ -138,22 +154,24 @@ describe('job queue', () => {
     expect(d.log.some((l) => l.includes('"progress"'))).toBe(true);
   });
 
-  it('marks jobs running at shutdown as interrupted, and picks up queued ones', async () => {
+  it('marks a job left running by a crashed worker as interrupted, and picks up queued ones', async () => {
     const connectionString = process.env.DATABASE_URL!;
     const db = new DB(connectionString);
     await db.init();
-    const insert = async (targets: string, state: string) => {
+    const insert = async (targets: string, state: string, workerId: string | null) => {
       const res = await db.pool.query<{ id: number }>(
-        "INSERT INTO jobs(created, by, command, label, targets, args, state) VALUES('x', 't', 'validate', 'l', $1, '{}', $2) RETURNING id",
-        [targets, state]);
+        "INSERT INTO jobs(created, by, command, label, targets, args, state, worker_id) VALUES('x', 't', 'validate', 'l', $1, '{}', $2, $3) RETURNING id",
+        [targets, state, workerId]);
       return res.rows[0].id;
     };
-    const running = await insert('["KV7015/U01"]', 'running');
-    const queued = await insert('["KV7015/U02"]', 'queued');
+    // No heartbeat row for this worker id at all: indistinguishable from a worker that
+    // started a job and then crashed before ever heartbeating.
+    const running = await insert('["KV7015/U01"]', 'running', 'a-crashed-worker');
+    const queued = await insert('["KV7015/U02"]', 'queued', null);
     await db.close();
     const app = await makeApp();
-    expect((await app.jobs.get(running))!.state).toBe('interrupted');
-    app.jobs.start();
+    startScheduler(app);
+    await until(async () => (await app.jobs.get(running))!.state === 'interrupted');
     await until(async () => (await app.jobs.get(queued))!.state === 'done');
   });
 });

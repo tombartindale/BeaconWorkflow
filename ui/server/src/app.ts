@@ -68,21 +68,30 @@ export class App {
   readonly bus = new Bus();
   readonly bcn: Bcn;
   readonly status: StatusCache;
-  readonly jobs: JobQueue;
+  jobs!: JobQueue;
   readonly watcher: Watcher;
   doctor: Queried<DoctorEnvelope> | null = null;
   codes: CodeInfo[] = [];
   private queryCache = new Map<string, { at: number; env: Record<string, unknown> }>();
 
-  constructor(opts: AppOptions) {
+  private constructor(opts: AppOptions, db: DB) {
     this.warnings = checkRoot(resolve(opts.root));
     this.root = realpathSync(resolve(opts.root));
     this.dataDir = opts.dataDir;
-    this.db = new DB(join(this.dataDir, 'ui.sqlite'));
+    this.db = db;
     this.bcn = new Bcn(opts.bcn, this.root);
-    this.status = new StatusCache(this.bcn, this.bus, () => Number(this.db.prefs().poll_seconds) || 15);
-    this.jobs = new JobQueue(this.db, this.bus, this.bcn, this.root, () => this.db.prefs(), (job) => this.jobFinished(job));
+    this.status = new StatusCache(this.bcn, this.bus, async () => Number((await this.db.prefs()).poll_seconds) || 15);
     this.watcher = new Watcher(this.root, (reason) => { void this.status.refresh(reason); });
+  }
+
+  static async create(opts: AppOptions): Promise<App> {
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) throw new StartupError('DATABASE_URL is required (a Postgres connection string).');
+    const db = new DB(connectionString);
+    await db.init();
+    const app = new App(opts, db);
+    app.jobs = await JobQueue.create(db, app.bus, app.bcn, app.root, () => db.prefs(), (job) => app.jobFinished(job));
+    return app;
   }
 
   start(): void {
@@ -92,11 +101,11 @@ export class App {
     void this.warm();
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     this.status.stop();
     this.jobs.stop();
     this.watcher.stop();
-    this.db.close();
+    await this.db.close();
   }
 
   private async warm(): Promise<void> {
@@ -156,8 +165,8 @@ export class App {
   /** Where a target lives on disk. */
   targetPath(rel: string): string { return rel === '.' ? this.root : join(this.root, rel); }
 
-  operator(): string {
-    return this.db.prefs().operator || process.env.USER || '';
+  async operator(): Promise<string> {
+    return (await this.db.prefs()).operator || process.env.USER || '';
   }
 }
 

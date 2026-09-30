@@ -1,5 +1,14 @@
 // Starts the backend against a private copy of example/. The contract fixtures were first
 // recorded from the Python backend this one replaced, and now pin its behaviour.
+//
+// TODO(postgres): the backend's job history and preferences now live in Postgres
+// (see src/db.ts), so this needs a real or containerized Postgres reachable at
+// DATABASE_URL to run. Point DATABASE_URL at a throwaway database before running these
+// tests (e.g. `docker run -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:16` and
+// `DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres npm test -w server`).
+// Each backend gets its own schema-per-run isn't set up yet; that's left for whoever
+// wires this into CI/Docker Compose, since setting up a full containerized Postgres for
+// tests is out of scope for the SQLite-to-Postgres conversion itself.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { cpSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -35,6 +44,7 @@ export async function startBackend(): Promise<Backend> {
   cpSync(join(REPO, 'example'), root, { recursive: true, preserveTimestamps: true });
   const port = await freePort();
   const args = ['--root', root, '--port', String(port), '--data-dir', dataDir];
+  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL must point at a Postgres instance to run these tests; see the TODO at the top of this file.');
   const child: ChildProcess = spawn(process.execPath, ['--import', 'tsx', join(REPO, 'ui', 'server', 'src', 'cli.ts'), ...args],
     { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, BCN: join(REPO, 'tooling', '.venv', 'bin', 'bcn') } });
   let log = '';

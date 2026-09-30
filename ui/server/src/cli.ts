@@ -12,8 +12,10 @@ const USAGE = `usage: beacon-ui --root PATH [--port 8420] [--bcn PATH] [--data-d
   --root        programme root (holds programme.toml); or set BEACON_ROOT
   --port        port on 127.0.0.1 (default 8420, or BEACON_PORT)
   --bcn         path to the bcn executable (default: $BCN, tooling/.venv/bin/bcn, then PATH)
-  --data-dir    where the UI keeps its SQLite file and pastes
-  --static-dir  the built app to serve (default ui/app/dist/spa)`;
+  --data-dir    where the UI keeps its pastes
+  --static-dir  the built app to serve (default ui/app/dist/spa)
+
+  DATABASE_URL  Postgres connection string for job history and preferences (required)`;
 
 export async function main(argv: string[]): Promise<number> {
   let values;

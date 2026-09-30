@@ -96,7 +96,7 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
 
   // -- API ------------------------------------------------------------------------------------
   f.get('/api/boot', async (): Promise<BootResponse> => ({
-    root: app.root, prefs: app.db.prefs(), operator: app.operator(), warnings: app.warnings,
+    root: app.root, prefs: await app.db.prefs(), operator: await app.operator(), warnings: app.warnings,
     doctor: app.doctor, codes: app.codes, status_version: app.status.version,
   }));
 
@@ -166,7 +166,7 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
     const lang = langOf(data.lang);
     const args: JobArgs = { from: editTextFile(String(data.text ?? '')), lang };
     if (data.expect_sha && !data.overwrite) args.expect_sha = String(data.expect_sha);
-    const job = app.jobs.submit('edit', [rel], args, `edit ${lang === 'zh' ? 'topic.zh.md' : 'topic.md'} · ${rel}`, app.operator());
+    const job = await app.jobs.submit('edit', [rel], args, `edit ${lang === 'zh' ? 'topic.zh.md' : 'topic.md'} · ${rel}`, await app.operator());
     return reply.code(202).send(job);
   });
 
@@ -190,10 +190,10 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
   });
 
   // -- jobs -----------------------------------------------------------------------------------
-  f.get('/api/jobs', async (req: Req) => ({ jobs: app.jobs.list(toInt(req.query.limit ?? '100', 'limit')) }));
+  f.get('/api/jobs', async (req: Req) => ({ jobs: await app.jobs.list(toInt(req.query.limit ?? '100', 'limit')) }));
 
   f.get('/api/jobs/:id(^\\d+$)', async (req: Req, reply) => {
-    const job = app.jobs.get(Number(req.params.id));
+    const job = await app.jobs.get(Number(req.params.id));
     return job ?? reply.code(404).send({ error: 'No such job.' });
   });
 
@@ -203,14 +203,15 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
     const args: JobArgs = { ...((data.args && typeof data.args === 'object' ? data.args : {}) as JobArgs) };
     for (const k of ['from', 'import', 'by']) delete args[k];  // server-supplied only
     const targets = (Array.isArray(data.targets) ? data.targets : []).map((t) => app.targetRel(String(t)));
+    const operator = await app.operator();
     if (command === 'review' || command === 'ack' || (command === 'cues' && (args.set || args.unset))) {
-      args.by = app.operator() || 'ui';
+      args.by = operator || 'ui';
     }
-    return reply.code(202).send(app.jobs.submit(command, targets, args, jobLabel(command, targets, args), app.operator()));
+    return reply.code(202).send(await app.jobs.submit(command, targets, args, jobLabel(command, targets, args), operator));
   });
 
   f.post('/api/jobs/:id(^\\d+$)/cancel', async (req: Req, reply) => {
-    const job = app.jobs.cancel(Number(req.params.id));
+    const job = await app.jobs.cancel(Number(req.params.id));
     return job ?? reply.code(404).send({ error: 'No such job, or it has already finished.' });
   });
 
@@ -224,7 +225,7 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
     writeFileSync(file, text, 'utf8');
     const target = app.targetRel(String(data.path || '.'));
     const args: JobArgs = { from: file, dry_run: Boolean(data.dry_run) };
-    const job = app.jobs.submit('intake', [target], args, `intake${args.dry_run ? ' (check only)' : ''} · paste`, app.operator());
+    const job = await app.jobs.submit('intake', [target], args, `intake${args.dry_run ? ' (check only)' : ''} · paste`, await app.operator());
     return reply.code(202).send(job);
   });
 
@@ -265,7 +266,7 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
     const returned = app.safePath('translation/returned');
     if (!src.startsWith(returned + sep)) throw new Forbidden();
     const target = app.targetRel(String(data.path || '.'));
-    const job = app.jobs.submit('translation', [target], { import: src }, `translation import · ${basename(src)}`, app.operator());
+    const job = await app.jobs.submit('translation', [target], { import: src }, `translation import · ${basename(src)}`, await app.operator());
     return reply.code(202).send(job);
   });
 
@@ -277,7 +278,7 @@ export async function buildServer({ app, staticDir }: ServerOptions): Promise<Fa
     if ('jobs' in data) data.jobs = clamp(toInt(data.jobs, 'jobs'), 1, 16);
     if ('parallel_jobs' in data) data.parallel_jobs = clamp(toInt(data.parallel_jobs, 'parallel_jobs'), 1, 8);
     if ('poll_seconds' in data) data.poll_seconds = clamp(toInt(data.poll_seconds, 'poll_seconds'), 5, 600);
-    return app.db.setPrefs(data);
+    return await app.db.setPrefs(data);
   });
 
   // -- live events ----------------------------------------------------------------------------

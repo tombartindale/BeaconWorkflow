@@ -1,16 +1,16 @@
-// The UI's own small SQLite file: job history and preferences, nothing else.
+// The UI's own small Postgres database: job history and preferences, nothing else.
 //
-// Pipeline state never goes in here. Deleting this file loses job history and
-// preferences; every topic still looks exactly as done as it is. The schema is the
-// Python backend's, so an existing file carries over.
-import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+// Pipeline state never goes in here. Losing this database loses job history and
+// preferences; every topic still looks exactly as done as it is. Connects via
+// DATABASE_URL (a standard Postgres connection string), so the UI can run as one of
+// several services in a multi-user Docker Compose stack instead of a single-user
+// desktop app with a local file.
+import { Pool } from 'pg';
 import type { Prefs } from '@beacon/shared';
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS jobs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     created TEXT NOT NULL,
     started TEXT,
     finished TEXT,
@@ -46,30 +46,35 @@ export interface JobRow {
 }
 
 export class DB {
-  readonly conn: Database.Database;
+  readonly pool: Pool;
 
-  constructor(path: string) {
-    mkdirSync(dirname(path), { recursive: true });
-    this.conn = new Database(path);
-    this.conn.pragma('journal_mode = WAL');
-    this.conn.exec(SCHEMA);
+  constructor(connectionString: string) {
+    this.pool = new Pool({ connectionString });
   }
 
-  prefs(): Prefs {
+  /** Creates the schema if missing. Must be awaited once before the DB is used. */
+  async init(): Promise<void> {
+    await this.pool.query(SCHEMA);
+  }
+
+  async prefs(): Promise<Prefs> {
     const out: Record<string, unknown> = { ...DEFAULT_PREFS };
-    for (const row of this.conn.prepare('SELECT key, value FROM prefs').all() as Array<{ key: string; value: string }>) {
+    const res = await this.pool.query<{ key: string; value: string }>('SELECT key, value FROM prefs');
+    for (const row of res.rows) {
       try { out[row.key] = JSON.parse(row.value); } catch { /* ignore a damaged value */ }
     }
     return out as unknown as Prefs;
   }
 
-  setPrefs(values: Record<string, unknown>): Prefs {
-    const put = this.conn.prepare('INSERT INTO prefs(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
+  async setPrefs(values: Record<string, unknown>): Promise<Prefs> {
     for (const [k, v] of Object.entries(values)) {
-      if (k in DEFAULT_PREFS) put.run(k, JSON.stringify(v));
+      if (k in DEFAULT_PREFS) {
+        await this.pool.query('INSERT INTO prefs(key, value) VALUES($1, $2) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+          [k, JSON.stringify(v)]);
+      }
     }
     return this.prefs();
   }
 
-  close(): void { this.conn.close(); }
+  async close(): Promise<void> { await this.pool.end(); }
 }

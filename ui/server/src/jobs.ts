@@ -124,9 +124,14 @@ export class JobQueue {
   private jobs = new Map<number, Job>();
   private stallTimer: NodeJS.Timeout | null = null;
 
-  constructor(private db: DB, private bus: Bus, private bcn: Bcn, private root: string,
-    private prefs: () => Prefs, private onFinished: (job: JobSummary) => void) {
-    this.recover();
+  private constructor(private db: DB, private bus: Bus, private bcn: Bcn, private root: string,
+    private prefs: () => Promise<Prefs>, private onFinished: (job: JobSummary) => void) {}
+
+  static async create(db: DB, bus: Bus, bcn: Bcn, root: string, prefs: () => Promise<Prefs>,
+    onFinished: (job: JobSummary) => void): Promise<JobQueue> {
+    const q = new JobQueue(db, bus, bcn, root, prefs, onFinished);
+    await q.recover();
+    return q;
   }
 
   start(): void {
@@ -136,7 +141,7 @@ export class JobQueue {
         if (j.state === 'running' && j.lastEvent && Date.now() - j.lastEvent > STALL_MS) this.publish(j);
       }
     }, 2000);
-    this.schedule();
+    void this.schedule();
   }
 
   stop(): void {
@@ -146,26 +151,28 @@ export class JobQueue {
 
   // -- persistence ------------------------------------------------------------------------------
   /** Running jobs from a previous backend are marked interrupted, never silently lost. */
-  private recover(): void {
-    this.db.conn.prepare("UPDATE jobs SET state='interrupted', finished=? WHERE state='running'").run(now());
-    for (const row of this.db.conn.prepare("SELECT * FROM jobs WHERE state='queued' ORDER BY id").all() as JobRow[]) {
+  private async recover(): Promise<void> {
+    await this.db.pool.query("UPDATE jobs SET state='interrupted', finished=$1 WHERE state='running'", [now()]);
+    const res = await this.db.pool.query<JobRow>("SELECT * FROM jobs WHERE state='queued' ORDER BY id");
+    for (const row of res.rows) {
       this.jobs.set(row.id, Job.fromRow(row));
     }
   }
 
-  private save(j: Job): void {
-    this.db.conn.prepare('UPDATE jobs SET started=?, finished=?, state=?, exit_code=?, duration_ms=?, envelope=?, log=? WHERE id=?')
-      .run(j.started, j.finished, j.state, j.exitCode, j.durationMs, j.envelopes.length ? JSON.stringify(j.envelopes) : null,
-        j.log.join('\n'), j.id);
+  private async save(j: Job): Promise<void> {
+    await this.db.pool.query('UPDATE jobs SET started=$1, finished=$2, state=$3, exit_code=$4, duration_ms=$5, envelope=$6, log=$7 WHERE id=$8',
+      [j.started, j.finished, j.state, j.exitCode, j.durationMs, j.envelopes.length ? JSON.stringify(j.envelopes) : null,
+        j.log.join('\n'), j.id]);
   }
 
   // -- public -----------------------------------------------------------------------------------
-  submit(command: string, targets: string[], args: JobArgs, label: string, by: string): JobSummary {
+  async submit(command: string, targets: string[], args: JobArgs, label: string, by: string): Promise<JobSummary> {
     validateArgs(command, targets, args);
     const created = now();
-    const info = this.db.conn.prepare("INSERT INTO jobs(created, by, command, label, targets, args, state) VALUES(?,?,?,?,?,?, 'queued')")
-      .run(created, by, command, label, JSON.stringify(targets), JSON.stringify(args));
-    const j = new Job(Number(info.lastInsertRowid), command, label, targets, args, 'queued');
+    const res = await this.db.pool.query<{ id: number }>(
+      "INSERT INTO jobs(created, by, command, label, targets, args, state) VALUES($1,$2,$3,$4,$5,$6, 'queued') RETURNING id",
+      [created, by, command, label, JSON.stringify(targets), JSON.stringify(args)]);
+    const j = new Job(res.rows[0].id, command, label, targets, args, 'queued');
     j.created = created;
     j.by = by;
     this.jobs.set(j.id, j);
@@ -174,14 +181,14 @@ export class JobQueue {
     return j.summary();
   }
 
-  cancel(id: number): JobSummary | null {
+  async cancel(id: number): Promise<JobSummary | null> {
     const j = this.jobs.get(id);
     if (!j) return null;
     j.cancelRequested = true;
     if (j.state === 'queued') {
       j.state = 'cancelled';
       j.finished = now();
-      this.save(j);
+      await this.save(j);
       this.jobs.delete(j.id);
       this.publish(j);
     } else if (j.proc && j.proc.exitCode === null) {
@@ -190,17 +197,17 @@ export class JobQueue {
     return j.summary();
   }
 
-  get(id: number): JobDetail | null {
+  async get(id: number): Promise<JobDetail | null> {
     const live = this.jobs.get(id);
     if (live) return live.detail();
-    const row = this.db.conn.prepare('SELECT * FROM jobs WHERE id=?').get(id) as JobRow | undefined;
-    return row ? Job.fromRow(row).detail() : null;
+    const res = await this.db.pool.query<JobRow>('SELECT * FROM jobs WHERE id=$1', [id]);
+    return res.rows[0] ? Job.fromRow(res.rows[0]).detail() : null;
   }
 
-  list(limit = 100): JobSummary[] {
+  async list(limit = 100): Promise<JobSummary[]> {
     const live = new Map([...this.jobs.values()].map((j) => [j.id, j.summary()]));
-    const rows = this.db.conn.prepare('SELECT * FROM jobs ORDER BY id DESC LIMIT ?').all(limit) as JobRow[];
-    const out = rows.map((row) => {
+    const res = await this.db.pool.query<JobRow>('SELECT * FROM jobs ORDER BY id DESC LIMIT $1', [limit]);
+    const out = res.rows.map((row) => {
       const s = live.get(row.id);
       live.delete(row.id);
       return s || Job.fromRow(row).summary();
@@ -213,8 +220,9 @@ export class JobQueue {
   }
 
   // -- scheduling -------------------------------------------------------------------------------
-  private schedule(): void {
-    const limit = Math.max(1, Math.trunc(Number(this.prefs().parallel_jobs) || 2));
+  private async schedule(): Promise<void> {
+    const prefs = await this.prefs();
+    const limit = Math.max(1, Math.trunc(Number(prefs.parallel_jobs) || 2));
     const running = [...this.jobs.values()].filter((j) => j.state === 'running');
     const queued = [...this.jobs.values()].filter((j) => j.state === 'queued').sort((a, b) => a.id - b.id);
     for (const j of queued) {
@@ -227,7 +235,7 @@ export class JobQueue {
     }
   }
 
-  private argv(j: Job, target: string): string[] {
+  private async argv(j: Job, target: string): Promise<string[]> {
     const a = j.args;
     const path = target !== '.' ? join(this.root, target) : this.root;
     const argv = [j.command, path];
@@ -238,7 +246,10 @@ export class JobQueue {
     for (const p of only) argv.push('--only', String(p));
     if ('import' in a) argv.push('--import', String(a.import));
     for (const k of FLAG_ARGS) if (a[k]) argv.push(`--${k.replace(/_/g, '-')}`);
-    if (PIPELINE.has(j.command)) argv.push('--jobs', String(Math.max(1, Math.trunc(Number(this.prefs().jobs) || 1))));
+    if (PIPELINE.has(j.command)) {
+      const prefs = await this.prefs();
+      argv.push('--jobs', String(Math.max(1, Math.trunc(Number(prefs.jobs) || 1))));
+    }
     return argv;
   }
 
@@ -246,7 +257,7 @@ export class JobQueue {
     j.started = now();
     j.t0 = Date.now();
     j.lastEvent = Date.now();
-    this.save(j);
+    await this.save(j);
     this.publish(j);
     const codes: number[] = [];
     try {
@@ -266,15 +277,15 @@ export class JobQueue {
     j.exitCode = codes.length ? (codes.find((c) => c !== 0) ?? 0) : null;
     if (j.cancelRequested) j.state = 'cancelled';
     else j.state = codes.length && codes.every((c) => c === 0) ? 'done' : 'failed';
-    this.save(j);
+    await this.save(j);
     this.jobs.delete(j.id);
     this.publish(j);
     try { this.onFinished(j.summary()); } catch { /* never let a listener break the queue */ }
-    this.schedule();
+    void this.schedule();
   }
 
-  private invoke(j: Job, target: string): Promise<[number, AnyEnvelope | null]> {
-    const args = this.argv(j, target);
+  private async invoke(j: Job, target: string): Promise<[number, AnyEnvelope | null]> {
+    const args = await this.argv(j, target);
     const [file, ...prefixRest] = this.bcn.prefix;
     j.addLog(pyJson({ event: 'log', level: 'info', message: `$ bcn ${args.join(' ')}` }));
     return new Promise((resolve, reject) => {

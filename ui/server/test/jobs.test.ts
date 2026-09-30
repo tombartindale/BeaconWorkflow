@@ -1,4 +1,9 @@
 // The job queue and path safety, against a stand-in bcn whose timing the tests control.
+//
+// TODO(postgres): App/DB now talk to Postgres (see src/app.ts, src/db.ts), so these tests
+// need DATABASE_URL to point at a real or containerized Postgres instance to run - see the
+// TODO in test/harness.ts for how to stand one up locally. This file otherwise only needed
+// updating to the async App.create()/DB API shapes; it does not itself set up Postgres.
 import { cpSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,15 +23,15 @@ let dataDir: string;
 let logFile: string;
 const apps: App[] = [];
 
-function makeApp(): App {
-  const app = new App({ root, bcn: FAKE, dataDir });
+async function makeApp(): Promise<App> {
+  const app = await App.create({ root, bcn: FAKE, dataDir });
   apps.push(app);
   return app;
 }
 const events = () => (existsSync(logFile) ? readFileSync(logFile, 'utf8').trim().split('\n') : []);
-async function until(check: () => boolean, ms = 10_000) {
+async function until(check: () => boolean | Promise<boolean>, ms = 10_000) {
   const t = Date.now();
-  while (!check()) {
+  while (!(await check())) {
     if (Date.now() - t > ms) throw new Error('timed out waiting');
     await sleep(50);
   }
@@ -42,8 +47,8 @@ beforeEach(() => {
   process.env.FAKE_BCN_MS = '1500';
 });
 
-afterEach(() => {
-  for (const app of apps.splice(0)) { try { app.stop(); } catch { /* already stopped */ } }
+afterEach(async () => {
+  for (const app of apps.splice(0)) { try { await app.stop(); } catch { /* already stopped */ } }
   rmSync(base, { recursive: true, force: true });
 });
 
@@ -60,62 +65,62 @@ describe('overlaps', () => {
 
 describe('job queue', () => {
   it('runs jobs in parallel but never two on the same topic', async () => {
-    const app = makeApp();
-    app.db.setPrefs({ parallel_jobs: 2 });
+    const app = await makeApp();
+    await app.db.setPrefs({ parallel_jobs: 2 });
     app.jobs.start();
-    const a = app.jobs.submit('validate', ['KV7015/U01'], {}, 'a', 't');
-    const b = app.jobs.submit('validate', ['KV7015/U01/T01'], {}, 'b', 't');
-    const c = app.jobs.submit('validate', ['KV7015/U02'], {}, 'c', 't');
+    const a = await app.jobs.submit('validate', ['KV7015/U01'], {}, 'a', 't');
+    const b = await app.jobs.submit('validate', ['KV7015/U01/T01'], {}, 'b', 't');
+    const c = await app.jobs.submit('validate', ['KV7015/U02'], {}, 'c', 't');
     await until(() => events().length >= 2);
     await sleep(200);
-    expect(app.jobs.get(a.id)!.state).toBe('running');
-    expect(app.jobs.get(b.id)!.state).toBe('queued');      // waits for a: same unit
-    expect(app.jobs.get(c.id)!.state).toBe('running');     // different unit: alongside a
-    await until(() => app.jobs.get(b.id)!.state === 'done');
+    expect((await app.jobs.get(a.id))!.state).toBe('running');
+    expect((await app.jobs.get(b.id))!.state).toBe('queued');      // waits for a: same unit
+    expect((await app.jobs.get(c.id))!.state).toBe('running');     // different unit: alongside a
+    await until(async () => (await app.jobs.get(b.id))!.state === 'done');
     const order = events().filter((e) => e.startsWith('start')).map((e) => e.split(' ')[2]);
     expect(order.indexOf(join(root, 'KV7015/U01/T01'))).toBeGreaterThan(order.indexOf(join(root, 'KV7015/U01')));
-    expect(app.jobs.get(a.id)).toMatchObject({ state: 'done', exit_code: 0, ok: true });
+    expect(await app.jobs.get(a.id)).toMatchObject({ state: 'done', exit_code: 0, ok: true });
   });
 
   it('respects the parallel limit', async () => {
-    const app = makeApp();
-    app.db.setPrefs({ parallel_jobs: 1 });
+    const app = await makeApp();
+    await app.db.setPrefs({ parallel_jobs: 1 });
     app.jobs.start();
-    const a = app.jobs.submit('validate', ['KV7015/U01'], {}, 'a', 't');
-    const b = app.jobs.submit('validate', ['KV7015/U02'], {}, 'b', 't');
-    await until(() => app.jobs.get(a.id)!.state === 'running');
+    const a = await app.jobs.submit('validate', ['KV7015/U01'], {}, 'a', 't');
+    const b = await app.jobs.submit('validate', ['KV7015/U02'], {}, 'b', 't');
+    await until(async () => (await app.jobs.get(a.id))!.state === 'running');
     await sleep(300);
-    expect(app.jobs.get(b.id)!.state).toBe('queued');
-    await until(() => app.jobs.get(b.id)!.state === 'done');
+    expect((await app.jobs.get(b.id))!.state).toBe('queued');
+    await until(async () => (await app.jobs.get(b.id))!.state === 'done');
   });
 
   it('cancelling a running job sends SIGINT and lets bcn finish its envelope', async () => {
     process.env.FAKE_BCN_MS = '20000';
-    const app = makeApp();
+    const app = await makeApp();
     app.jobs.start();
-    const j = app.jobs.submit('render', ['KV7015/U01/T01'], {}, 'r', 't');
+    const j = await app.jobs.submit('render', ['KV7015/U01/T01'], {}, 'r', 't');
     await until(() => events().some((e) => e.startsWith('start')));
-    app.jobs.cancel(j.id);
-    await until(() => app.jobs.get(j.id)!.state === 'cancelled');
+    await app.jobs.cancel(j.id);
+    await until(async () => (await app.jobs.get(j.id))!.state === 'cancelled');
     expect(events().some((e) => e.startsWith('sigint render'))).toBe(true);
-    const detail = app.jobs.get(j.id)!;
+    const detail = (await app.jobs.get(j.id))!;
     expect(detail.exit_code).toBe(130);
     expect(detail.envelopes[0]).toMatchObject({ cancelled: true });
   });
 
   it('cancelling a queued job never runs it', async () => {
-    const app = makeApp();
-    app.db.setPrefs({ parallel_jobs: 1 });
+    const app = await makeApp();
+    await app.db.setPrefs({ parallel_jobs: 1 });
     app.jobs.start();
-    app.jobs.submit('validate', ['KV7015/U01'], {}, 'a', 't');
-    const b = app.jobs.submit('validate', ['KV7015/U02'], {}, 'b', 't');
-    expect(app.jobs.cancel(b.id)!.state).toBe('cancelled');
+    await app.jobs.submit('validate', ['KV7015/U01'], {}, 'a', 't');
+    const b = await app.jobs.submit('validate', ['KV7015/U02'], {}, 'b', 't');
+    expect((await app.jobs.cancel(b.id))!.state).toBe('cancelled');
     await sleep(2500);
     expect(events().some((e) => e.includes('KV7015/U02'))).toBe(false);
   });
 
   it('streams progress to the bus and records the log', async () => {
-    const app = makeApp();
+    const app = await makeApp();
     const seen: string[] = [];
     const progress: unknown[] = [];
     app.bus.subscribe((ev) => {
@@ -123,10 +128,10 @@ describe('job queue', () => {
       if (ev.type === 'job-event' && ev.event.event === 'progress') progress.push(ev.event);
     });
     app.jobs.start();
-    const j = app.jobs.submit('validate', ['KV7015/U01/T01'], { lang: 'en' }, 'v', 't');
-    await until(() => app.jobs.get(j.id)!.state === 'done');
+    const j = await app.jobs.submit('validate', ['KV7015/U01/T01'], { lang: 'en' }, 'v', 't');
+    await until(async () => (await app.jobs.get(j.id))!.state === 'done');
     expect(seen).toContain('job-event');
-    const d = app.jobs.get(j.id)!;
+    const d = (await app.jobs.get(j.id))!;
     expect(d.log[0]).toBe(`{"event": "log", "level": "info", "message": "$ bcn validate ${join(root, 'KV7015/U01/T01')} --lang en --jobs 1"}`);
     // Progress is live only: a finished job is read back from the database without it, as before.
     expect(progress.length).toBeGreaterThan(3);
@@ -134,21 +139,28 @@ describe('job queue', () => {
   });
 
   it('marks jobs running at shutdown as interrupted, and picks up queued ones', async () => {
-    const db = new DB(join(dataDir, 'ui.sqlite'));
-    const insert = db.conn.prepare("INSERT INTO jobs(created, by, command, label, targets, args, state) VALUES('x', 't', 'validate', 'l', ?, '{}', ?)");
-    const running = Number(insert.run('["KV7015/U01"]', 'running').lastInsertRowid);
-    const queued = Number(insert.run('["KV7015/U02"]', 'queued').lastInsertRowid);
-    db.close();
-    const app = makeApp();
-    expect(app.jobs.get(running)!.state).toBe('interrupted');
+    const connectionString = process.env.DATABASE_URL!;
+    const db = new DB(connectionString);
+    await db.init();
+    const insert = async (targets: string, state: string) => {
+      const res = await db.pool.query<{ id: number }>(
+        "INSERT INTO jobs(created, by, command, label, targets, args, state) VALUES('x', 't', 'validate', 'l', $1, '{}', $2) RETURNING id",
+        [targets, state]);
+      return res.rows[0].id;
+    };
+    const running = await insert('["KV7015/U01"]', 'running');
+    const queued = await insert('["KV7015/U02"]', 'queued');
+    await db.close();
+    const app = await makeApp();
+    expect((await app.jobs.get(running))!.state).toBe('interrupted');
     app.jobs.start();
-    await until(() => app.jobs.get(queued)!.state === 'done');
+    await until(async () => (await app.jobs.get(queued))!.state === 'done');
   });
 });
 
 describe('paths', () => {
-  it('refuses anything outside the root, including through a symlink', () => {
-    const app = makeApp();
+  it('refuses anything outside the root, including through a symlink', async () => {
+    const app = await makeApp();
     expect(app.safePath('KV7015/course-map.md')).toBe(join(root, 'KV7015/course-map.md'));
     expect(() => app.safePath('../outside')).toThrow(Forbidden);
     expect(() => app.safePath('%2e%2e/outside')).toThrow(Forbidden);
@@ -159,8 +171,8 @@ describe('paths', () => {
     expect(() => app.safePath('escape/not-yet-there')).toThrow(Forbidden);
   });
 
-  it('accepts topic ids and tree paths as targets, and nothing else', () => {
-    const app = makeApp();
+  it('accepts topic ids and tree paths as targets, and nothing else', async () => {
+    const app = await makeApp();
     expect(app.targetRel('KV7015-U01-T01')).toBe('KV7015/U01/T01');
     expect(app.targetRel('KV7015/U01')).toBe('KV7015/U01');
     expect(app.targetRel('.')).toBe('.');

@@ -30,7 +30,7 @@ export interface BeaconServer {
 }
 
 export async function createServer(opts: CreateServerOptions): Promise<BeaconServer> {
-  const app = new App({ root: opts.root, bcn: opts.bcn, dataDir: opts.dataDir });
+  const app = await App.create({ root: opts.root, bcn: opts.bcn, dataDir: opts.dataDir });
   const http = await buildServer({ app, staticDir: opts.staticDir ?? DEFAULT_STATIC_DIR });
   const host = opts.host ?? '127.0.0.1';
   await http.listen({ host, port: opts.port });
@@ -40,7 +40,7 @@ export async function createServer(opts: CreateServerOptions): Promise<BeaconSer
   return {
     app, http, url: `http://${host}:${port}`,
     async close() {
-      app.stop();
+      await app.stop();
       await http.close();
     },
   };

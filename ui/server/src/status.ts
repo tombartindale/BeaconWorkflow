@@ -21,11 +21,13 @@ export class StatusCache {
   version = 0;
   error: string | null = null;
 
-  constructor(private bcn: Bcn, private bus: Bus, private pollSeconds: () => number) {}
+  constructor(private bcn: Bcn, private bus: Bus, private pollSeconds: () => Promise<number>) {}
 
   start(): void {
     const tick = () => {
-      this.timer = setTimeout(() => { void this.refresh('poll').finally(tick); }, Math.max(3, this.pollSeconds()) * 1000);
+      void this.pollSeconds().then((seconds) => {
+        this.timer = setTimeout(() => { void this.refresh('poll').finally(tick); }, Math.max(3, seconds) * 1000);
+      });
     };
     tick();
   }

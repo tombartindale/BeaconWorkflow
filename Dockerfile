@@ -42,17 +42,6 @@ RUN curl -fsSL -o ffmpeg.tar.xz "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VER
     && make install \
     && /opt/ffmpeg/bin/ffmpeg -version | head -1 | grep -q "ffmpeg version ${FFMPEG_VERSION}"
 
-FROM base AS ffmpeg
-COPY --from=ffmpeg-build /opt/ffmpeg /opt/ffmpeg
-# Runtime shared libs the --enable-lib* flags above link against. Exact soname-versioned
-# package names (e.g. libx264-164) vary between Debian releases; the -dev packages'
-# corresponding runtime packages are pulled in as apt dependencies already during the
-# ffmpeg-build stage, so re-declaring the *-dev packages here (without build-essential)
-# is the simplest way to get matching runtime libs without guessing exact package names.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-      libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 # -- tooling: Python venv + pinned Marp toolchain + Chrome for Testing ------------------
 FROM base AS tooling
 WORKDIR /app
@@ -79,22 +68,39 @@ COPY ui/package.json ui/package-lock.json ./
 COPY ui/shared/package.json shared/
 COPY ui/server/package.json server/
 COPY ui/app/package.json app/
-RUN npm ci --no-audit --no-fund
+# --ignore-scripts: app's "postinstall" (quasar prepare) needs the app's source tree and
+# quasar.config.ts, neither copied in yet at this point (only package.json, so this layer
+# stays cached across source-only changes). Run the two deferred postinstalls explicitly,
+# once source is in place: esbuild's (fetches its platform binary) and app's (quasar
+# prepare, needs quasar.config.ts and src/).
+RUN npm ci --no-audit --no-fund --ignore-scripts
 COPY ui/shared shared
 COPY ui/server server
 COPY ui/app app
+RUN npm rebuild esbuild
+RUN npm run postinstall --workspace=app
 RUN npm run build
 
 # -- final image -------------------------------------------------------------------------
 FROM base AS final
 WORKDIR /app
 
-COPY --from=ffmpeg /opt/ffmpeg/bin/ffmpeg /opt/ffmpeg/bin/ffprobe /usr/local/bin/
+# The ffmpeg binaries link dynamically against these at runtime (the --enable-lib* flags
+# in ffmpeg-build); installing them here, not in ffmpeg-build, is deliberate — packages
+# installed in one build stage never carry over into another via COPY, only the specific
+# files named, so the shared libraries have to be installed directly in this final stage.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libx264-164 libx265-199 libvpx7 libmp3lame0 libopus0 \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=ffmpeg-build /opt/ffmpeg/bin/ffmpeg /opt/ffmpeg/bin/ffprobe /usr/local/bin/
 COPY --from=tooling /app/tooling /app/tooling
 COPY --from=ui-build /app/ui/server/dist ui/server/dist
 COPY --from=ui-build /app/ui/server/package.json ui/server/package.json
 COPY --from=ui-build /app/ui/server/bin ui/server/bin
-COPY --from=ui-build /app/ui/server/node_modules ui/server/node_modules
+# npm workspaces hoist dependencies to the workspace root's node_modules, not into each
+# workspace's own directory, so the whole root is copied rather than ui/server/node_modules
+# (which does not exist as a separate tree).
+COPY --from=ui-build /app/ui/node_modules ui/node_modules
 COPY --from=ui-build /app/ui/app/dist/spa ui/app/dist/spa
 
 ENV BCN=/app/tooling/.venv/bin/bcn

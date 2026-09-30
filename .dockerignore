@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+ui/app/dist
+ui/server/dist
+tooling/.venv
+tooling/vendor
+tooling/node/node_modules
+working_area
+partner-examples
+partner-examples.zip
+assets
+.git
+*.log

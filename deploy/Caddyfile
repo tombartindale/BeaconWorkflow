@@ -1,0 +1,6 @@
+# Local dev: plain HTTP on localhost, no TLS cert needed.
+# For a real deployment, replace ":80" with your domain (e.g. beacon.example.org)
+# and Caddy will get a Let's Encrypt certificate automatically.
+:80 {
+	reverse_proxy api:8420
+}

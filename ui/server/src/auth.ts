@@ -7,7 +7,7 @@
 // separate authorization concern once there is more than one programme to guard (see the
 // deployment spec's multi-programme extension).
 import { randomBytes, randomUUID } from 'node:crypto';
-import { createTransport, type Transporter } from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import type { DB } from './db.js';
 import { now } from './util.js';
 
@@ -19,7 +19,7 @@ export interface AuthOptions {
   allowedDomains: string[];   // e.g. ['northumbria.ac.uk']; empty means nobody can sign in
   baseUrl: string;            // e.g. https://beacon.example.org, used in the emailed link
   emailFrom: string;
-  smtpUrl?: string;           // unset: log the link instead of emailing it (local dev)
+  sendgridApiKey?: string;    // unset: log the link instead of emailing it (local dev)
 }
 
 export interface Session { email: string }
@@ -32,13 +32,14 @@ function isAllowed(email: string, allowedDomains: string[]): boolean {
 }
 
 export class Auth {
-  private transport: Transporter | null;
+  private sendgridEnabled: boolean;
   /** The session cookie is marked Secure unless the deployment's own base URL is plain
    *  http (local dev without TLS) — never send it over an unencrypted connection otherwise. */
   readonly cookieSecure: boolean;
 
   constructor(private db: DB, private opts: AuthOptions) {
-    this.transport = opts.smtpUrl ? createTransport(opts.smtpUrl) : null;
+    this.sendgridEnabled = Boolean(opts.sendgridApiKey);
+    if (opts.sendgridApiKey) sgMail.setApiKey(opts.sendgridApiKey);
     this.cookieSecure = opts.baseUrl.startsWith('https://');
   }
 
@@ -103,12 +104,13 @@ export class Auth {
   }
 
   private async send(email: string, link: string): Promise<void> {
-    if (!this.transport) {
-      // Local dev / no SMTP configured yet: the link is logged so sign-in still works.
+    if (!this.sendgridEnabled) {
+      // Local dev / no SendGrid API key configured yet: the link is logged so sign-in
+      // still works without a real email provider set up.
       process.stderr.write(`beacon-ui: magic link for ${email}: ${link}\n`);
       return;
     }
-    await this.transport.sendMail({
+    await sgMail.send({
       from: this.opts.emailFrom, to: email, subject: 'Sign in to Beacon',
       text: `Sign in to Beacon: ${link}\n\nThis link expires in 15 minutes and can only be used once.`,
     });
@@ -119,7 +121,9 @@ export function authOptionsFromEnv(): AuthOptions {
   return {
     allowedDomains: (process.env.ALLOWED_EMAIL_DOMAINS || '').split(',').map((d) => d.trim()).filter(Boolean),
     baseUrl: process.env.MAGIC_LINK_BASE_URL || 'http://localhost',
+    // Must be a sender address verified in the SendGrid account (single-sender or a
+    // verified/authenticated domain) — SendGrid rejects sends from an unverified "from".
     emailFrom: process.env.EMAIL_FROM || 'beacon@localhost',
-    smtpUrl: process.env.SMTP_URL || undefined,
+    sendgridApiKey: process.env.SENDGRID_API_KEY || undefined,
   };
 }

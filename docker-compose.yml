@@ -22,7 +22,7 @@ services:
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-northumbria.ac.uk}
       MAGIC_LINK_BASE_URL: ${MAGIC_LINK_BASE_URL:-http://localhost}
       EMAIL_FROM: ${EMAIL_FROM:-beacon@localhost}
-      SMTP_URL: ${SMTP_URL:-}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
     volumes:
       - programme-root:/data/programme
       - ui-state:/data/ui-state

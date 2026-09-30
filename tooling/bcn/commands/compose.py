@@ -24,11 +24,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .. import cuesheet, fsutil, srt, tools
-from ..config import Config, load_theme, resolve_theme_name
+from ..config import Config, Theme, load_theme, resolve_theme_name
 from ..envelope import Diagnostic, Envelope, Fail, TopicResult
 from ..markdown import parse
 from ..media import ffmpeg, loudness, probe
-from ..progress import TopicProgress
+from ..progress import TopicProgress, run as run_proc
 from ..runner import require_input, require_step, run_topics, try_skip
 from ..tree import Target, Topic
 
@@ -80,21 +80,48 @@ def _esc(s: str) -> str:
     return s.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'").replace(",", "\\,")
 
 
+def watermark_logo_html(theme: Theme, width: int, height: int) -> str:
+    """A page the exact size of the watermark itself, transparent, the theme's logo filling
+    it. Unlike bumpers' outro card (a full slide-sized frame with the logo centred in it), this
+    page has no frame of its own to crop out: card.mjs can screenshot it directly."""
+    logo = theme.asset(theme.bumper["logo"]) if theme.bumper else None
+    img = f"<img src='{logo.as_uri()}' alt=''>" if logo else ""
+    return f"""<!doctype html><html><head><meta charset="utf-8"><style>
+html, body {{ margin: 0; width: {width}px; height: {height}px; overflow: hidden; background: transparent; }}
+img {{ display: block; width: 100%; height: 100%; object-fit: contain; }}
+</style></head><body>{img}</body></html>
+"""
+
+
 def filter_graph(c: dict, es: EncodeSpec, duration: float, burn_subs: str | None, sub_font: str,
-                 watermark_font: str | None, fonts_dir: Path | None = None) -> str:
-    """burn_subs is the SRT filename to burn in, or None to leave the video plain (sidecar mode)."""
+                 watermark_font: str | None, fonts_dir: Path | None = None, safe_right: float = 0.5,
+                 logo_input: str | None = None) -> str:
+    """burn_subs is the SRT filename to burn in, or None to leave the video plain (sidecar mode).
+
+    safe_right is the theme's safe_area.right (the fraction of the frame kept clear of slide
+    content for side_by_side): the presenter fills exactly that share, full height, cropped to
+    fit with no letterboxing, on the assumption the footage is already framed for it.
+
+    logo_input is the ffmpeg input label (e.g. "2:v") of a pre-rendered, transparent logo PNG
+    to draw over the bottom-right corner of the whole frame, side_by_side only: a watermark on
+    top of the presenter, not the small logo bumpers already put on the outro card.
+    """
     W, H, fps = _even(es.width), _even(es.height), es.fps
     parts = []
     if c["layout"] == "side_by_side":
-        sw = _even(W * 0.64)
-        sh = _even(sw * 9 / 16)
-        pw, ph = W - sw, sh
-        y = (H - sh) // 2
-        parts.append(f"color=c=black:s={W}x{H}:r={fps}:d={duration:.3f}[bg]")
-        parts.append(f"[1:v]scale={sw}:{sh}:force_original_aspect_ratio=decrease,pad={sw}:{sh}:(ow-iw)/2:(oh-ih)/2,fps={fps},setsar=1[slides]")
-        parts.append(f"[0:v]scale={pw}:{ph}:force_original_aspect_ratio=increase,crop={pw}:{ph},fps={fps},setsar=1[pres]")
-        parts.append(f"[bg][slides]overlay=x=0:y={y}:eof_action=repeat[a]")
-        parts.append(f"[a][pres]overlay=x={sw}:y={y}:eof_action=repeat[comp]")
+        sw = W - _even(W * safe_right)  # where the presenter's share starts: the theme's safe_right
+        pw = W - sw                     # the presenter's share: exactly the width the theme reserves
+        # The slide PNG is already the full 1920x1080 frame with its content confined to the
+        # left by the theme's own safe_area.right (bcn render enforces this), so it is used as
+        # the full-size base layer directly, with only the presenter needing any scaling.
+        parts.append(f"[1:v]scale={W}:{H}:force_original_aspect_ratio=decrease,pad={W}:{H}:(ow-iw)/2:(oh-ih)/2,fps={fps},setsar=1[slides]")
+        parts.append(f"[0:v]scale={pw}:{H}:force_original_aspect_ratio=increase,crop={pw}:{H},fps={fps},setsar=1[pres]")
+        if logo_input:
+            m = _even(H * 0.03)
+            parts.append(f"[slides][pres]overlay=x={sw}:y=0:eof_action=repeat[comp0]")
+            parts.append(f"[comp0][{logo_input}]overlay=x=W-w-{m}:y=H-h-{m}[comp]")
+        else:
+            parts.append(f"[slides][pres]overlay=x={sw}:y=0:eof_action=repeat[comp]")
     elif c["layout"] == "inset":
         iw = _even(W * c["inset_scale"])
         m = c["inset_margin"]
@@ -191,14 +218,17 @@ def compose_topic(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, args
     if try_skip(t, r, "compose", lang, outputs, inputs, args.force):
         return
 
-    tl = tools.require(cfg, "ffmpeg", "ffprobe")
+    theme = load_theme(t.root, resolve_theme_name(cfg, args.theme))
+    # A watermark of the theme's logo over the presenter, side_by_side only: drawn on top of
+    # everything, unlike bumpers' outro card, which sits on its own separate slide.
+    want_logo = c["layout"] == "side_by_side" and bool(theme.bumper) and bool(theme.bumper.get("logo"))
+    tl = tools.require(cfg, "ffmpeg", "ffprobe", *(["chrome"] if want_logo else []))
     times = cuesheet.read(t.cues_csv, n, t.cues_csv.name)
     info = probe(tl, t.video, "edit/master.mp4")
     duration = info.duration
     if times[-1] >= duration:
         raise Fail("CUE_SHEET_INVALID", "The last slide starts after the video ends.", file=t.cues_csv.name)
 
-    theme = load_theme(t.root, resolve_theme_name(cfg, args.theme))
     sub_font = theme.subtitle_font(lang)
     wm_font = next((f for f in FONT_CANDIDATES if Path(f).is_file()), None)
 
@@ -216,11 +246,31 @@ def compose_topic(t: Topic, r: TopicResult, tp: TopicProgress, cfg: Config, args
         if burn_in:
             shutil.copyfile(subs, work / "subs.srt")
 
+        logo_args: list[str] = []
+        logo_input = None
+        if want_logo:
+            # A small page sized to the watermark itself (unlike the outro card, which is a
+            # full 1920x1080 frame with the logo centred in it): the image just fills it.
+            logo_h = _even(_even(es.height) * 0.08)
+            logo_w = _even(logo_h * 3)
+            (work / "logo.html").write_text(watermark_logo_html(theme, logo_w, logo_h), encoding="utf-8")
+            logo_code, _logo_out, logo_err = run_proc(
+                [tl.node or "node", str(tools.NODE_DIR / "card.mjs"), str(work / "logo.html"),
+                 str(work / "logo.png"), str(logo_w), str(logo_h), "1000", "1000", "transparent"],
+                env={"CHROME_PATH": tl.chrome or ""}, cwd=str(tools.NODE_DIR), timeout=180)
+            if logo_code != 0 or not (work / "logo.png").is_file():
+                r.diagnostics.append(Diagnostic("COMPOSE_BUMPER", f"Rendering the logo watermark failed (exit {logo_code}); composing without it.",
+                                                topic=t.id, lang=lang, data={"stderr": logo_err[-500:]}))
+            else:
+                logo_args = ["-i", str(work / "logo.png")]
+                logo_input = "2:v"
+
         share = 0.85 if bumpers else 1.0
         body = work / "body.mp4"
-        graph = filter_graph(c, es, duration, "subs.srt" if burn_in else None, sub_font, wm_font, theme.fonts_dir)
+        graph = filter_graph(c, es, duration, "subs.srt" if burn_in else None, sub_font, wm_font, theme.fonts_dir,
+                             theme.safe_right, logo_input)
         tp.update(1, "encoding")
-        ffmpeg(tl, ["-i", str(t.video), "-f", "concat", "-safe", "0", "-i", "slides.ffconcat",
+        ffmpeg(tl, ["-i", str(t.video), "-f", "concat", "-safe", "0", "-i", "slides.ffconcat", *logo_args,
                     "-filter_complex", graph, "-map", "[v]", "-map", "0:a?", "-t", f"{duration:.3f}",
                     *_encode_args(es), str(body)],
                duration=duration, on_pct=lambda pct: tp.update(pct * share, "encoding"), cwd=str(work))

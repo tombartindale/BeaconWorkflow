@@ -24,7 +24,6 @@ const verify = shallowRef<TopicVerifyResponse | null>(null);
 const verifying = ref(false);
 const error = ref<string | null>(null);
 const layout = ref<'side' | 'stacked'>(beacon.boot?.prefs.topic_layout || 'side');
-const lang = ref<'en' | 'zh'>('en');  // which language the actions work on
 
 const show = computed(() => data.value?.show.results?.[0] ?? null);
 const status = computed(() => data.value?.status ?? null);
@@ -71,8 +70,8 @@ const allDiags = computed(() => [...((verify.value?.diagnostics || []) as Diagno
     <q-banner v-if="error" class="bg-negative text-white q-mb-md" rounded>{{ error }}</q-banner>
     <div v-if="!data && !error" class="text-grey-7 q-pa-lg"><q-spinner /> Loading {{ id }}…</div>
     <template v-if="data">
-      <TopicHead v-model:layout="layout" v-model:lang="lang" />
-      <TopicActions :lang="lang" @verify="runVerify" />
+      <TopicHead v-model:layout="layout" />
+      <TopicActions @verify="runVerify" />
       <div :class="['panes', layout, 'q-mb-md']">
         <ScriptPane />
         <SlidesPane />

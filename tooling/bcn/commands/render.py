@@ -36,7 +36,11 @@ def marp_source(p: ParsedTopic, theme: Theme, lang: str) -> str:
     faces = "".join(
         f"@font-face {{ font-family: \"{f['family']}\"; src: url(\"{(theme.dir / f['file']).as_uri()}\"); font-weight: {f.get('weight', 400)}; }} "
         for f in theme.font_faces or [])
-    style = faces + f"section {{ font-family: {fonts}; --bcn-safe-bottom: {theme.safe_bottom}px;"
+    # The width of the strip reserved on the right, not where it starts: safe_area.right in
+    # theme.toml is "keep clear from this fraction of the width onward", e.g. 0.5 reserves
+    # the right half, so the padding is the remaining fraction of the frame.
+    safe_right_px = round(theme.width * (1 - theme.safe_right))
+    style = faces + f"section {{ font-family: {fonts}; --bcn-safe-bottom: {theme.safe_bottom}px; --bcn-safe-right: {safe_right_px}px;"
     if size:
         style += f" --bcn-font-size: {size}px;"
     style += " }"

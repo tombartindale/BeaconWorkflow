@@ -17,7 +17,8 @@ from .tree import find_root, resolve
 
 COMMANDS = [
     "validate", "render", "script", "bumpers", "cues", "subtitles", "compose", "status", "package", "qa",
-    "show", "diagnostics", "review", "ack", "edit", "intake", "translation", "qti", "sync", "schema", "codes", "doctor",
+    "show", "diagnostics", "review", "ack", "edit", "intake", "translation", "qti", "coursemap", "sync",
+    "schema", "codes", "doctor",
 ]
 # Commands whose positional argument is not a tree path.
 NO_TARGET = {"schema", "codes", "doctor"}

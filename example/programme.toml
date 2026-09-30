@@ -7,6 +7,9 @@ theme = "default"
 
 [validate]
 forbidden = ["semester", "deadline", "next week", "Cohort 7"]
+localization = ["Example University", "Department for Education"]
+names = true
+names_allow = ["Beacon Example"]
 
 [cues]
 min_confidence = 0.8     # start strict; loosen only if a real edited topic proves it necessary

@@ -47,6 +47,8 @@ CODES: dict[str, tuple[str, str]] = {
     "MD_SLIDE_TITLE_MISSING": ("warn", "A slide has no heading."),
     "MD_DATE": ("error", "Narration or slide text contains a date."),
     "MD_FORBIDDEN": ("error", "Text contains a forbidden string."),
+    "MD_LOCALIZATION": ("error", "Text names a country, institution or agency, tying it to one place."),
+    "MD_PERSON_NAME": ("error", "Text appears to name a person, which may not carry over to reuse."),
     "MD_DEICTIC": ("error", "Narration refers to something on screen."),
     "MD_IMAGE_ALT": ("error", "An image has empty alt text."),
     "MD_IMAGE_PATH": ("error", "An image path is not a relative path into assets/."),

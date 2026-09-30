@@ -13,7 +13,7 @@ sleep 2                  # let the copied media settle past the "still syncing" 
 for step in validate render cues subtitles; do
   "$BCN" "$step" "$DEST" --quiet --human || true
 done
-"$BCN" compose "$DEST/KV7015/U01/T02" --quiet --human --no-bumpers || true
+"$BCN" compose "$DEST/KV7015/U01/T02" --quiet --human --draft --no-bumpers || true
 "$BCN" status "$DEST" --quiet --human | head -8
 echo
 echo "UI: $PWD/ui/server/bin/beacon-ui --root $DEST"

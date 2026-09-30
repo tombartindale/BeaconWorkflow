@@ -33,6 +33,7 @@ export const STEP_HELP: Record<string, string> = {
     + 'checksums. Needs cues and subtitles to be done.',
   qa: 'Run every check on the topic, plus cross-checks: video length, files older than the script, and '
     + 'misheard words not yet reviewed.',
+  coursemap: 'Print course-map.md as a PDF, to share with collaborators who do not have the working copy.',
 };
 
 export const LANG_NAME = { en: 'English', zh: 'Mandarin' } as const;

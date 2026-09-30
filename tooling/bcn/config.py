@@ -34,6 +34,17 @@ DEFAULTS: dict[str, Any] = {
         # Per-check level: {"MD_DATE" = "warn"} or "off". Warnings never block.
         "severity": {},
         "forbidden": ["semester", "deadline", "next week"],
+        # Country, institution and agency names that tie content to one place, so it can be
+        # flagged before reuse elsewhere. Empty by default: populate with the programme's own
+        # university, funders, government bodies, and any countries named in examples.
+        "localization": [],
+        # Off by default: a heuristic (capitalised word sequences, honorifics), not NLP, so it
+        # flags candidates for a human rather than confirmed hits. Turn on with [validate.severity]
+        # left alone (error) or set to "warn" if the false-positive rate is too high to block on.
+        "names": False,
+        # Capitalised phrases the heuristic would otherwise flag: recurring product/brand names,
+        # course titles, or anything else legitimately proper-cased in this programme.
+        "names_allow": [],
         "deictic": [
             "here on the left",
             "here on the right",
@@ -50,6 +61,7 @@ DEFAULTS: dict[str, Any] = {
     "validate_zh": {
         "slide_chars_max": 220,
         "forbidden": [],
+        "localization": [],
     },
     "documents": {
         # Extra headings to insist on. Units, topics and outcomes are always checked.
@@ -198,11 +210,13 @@ class Theme:
     width: int
     height: int
     safe_bottom: int
+    safe_right: float  # fraction of width kept clear on the right, for a p-in-p presenter; 1.0 = none
     fonts: dict[str, list[str]]
     content_font_size: dict[str, int]
     image_scale: float | None = None
     font_faces: list[dict] | None = None
     bumper: dict | None = None
+    document: dict | None = None
     title_weight: int = 900
     subtitle_fonts: dict[str, str] | None = None
 
@@ -223,6 +237,11 @@ class Theme:
         b = self.bumper or {}
         return [self.asset(b[k]) for k in ("logo", "background_video") if b.get(k)]
 
+    def document_media(self) -> list[Path]:
+        """Files outside the stylesheet that printed documents (bcn coursemap) depend on."""
+        d = self.document or {}
+        return [self.asset(d["logo"])] if d.get("logo") else []
+
     def files(self) -> list[Path]:
         return sorted(p for p in self.dir.rglob("*") if p.is_file() and not p.name.startswith("."))
 
@@ -237,6 +256,13 @@ BUMPER_DEFAULTS: dict[str, Any] = {
     "intro_seconds": 5.0,
     "outro_seconds": 5.0,
     "fade_seconds": 0.75,
+}
+
+# Printed documents on a white page (bcn coursemap), overridable under [document] in theme.toml.
+# A separate logo from [bumper]: that one is usually a light mark for a dark video background.
+DOCUMENT_DEFAULTS: dict[str, Any] = {
+    "logo": "",        # PNG or SVG, relative to the theme directory; a dark mark for a white page
+    "logo_height": 28,  # points, in the printed header
 }
 
 
@@ -265,16 +291,21 @@ def load_theme(root: Path, name: str) -> Theme:
             width=int(slide["width"]),
             height=int(slide["height"]),
             safe_bottom=int(t["safe_area"]["bottom"]),
+            # A presenter inset over the right of the frame (compose's side_by_side layout)
+            # needs the slide content kept out of that space too; 1.0 means no reservation.
+            safe_right=float(t["safe_area"].get("right", 1.0)),
             fonts={k: list(v) for k, v in t["fonts"].items()},
             content_font_size={k: int(v) for k, v in t.get("font_size", {}).items()},
             image_scale=float(slide["image_scale"]) if "image_scale" in slide else None,
             font_faces=[dict(f) for f in t.get("font_face", [])],
             bumper={**BUMPER_DEFAULTS, **t.get("bumper", {})},
+            document={**DOCUMENT_DEFAULTS, **t.get("document", {})},
             title_weight=int(t.get("title_weight", 900)),
             subtitle_fonts={k: str(v) for k, v in t.get("subtitle_font", {}).items()},
         )
         for k in ("intro_seconds", "outro_seconds", "fade_seconds", "logo_height"):
             theme.bumper[k] = float(theme.bumper[k])
+        theme.document["logo_height"] = float(theme.document["logo_height"])
     except (KeyError, TypeError, ValueError) as e:
         raise Fail("RENDER_THEME", f"themes/{name}/theme.toml is missing or has a bad value: {e}",
                    file=str(d / "theme.toml")) from e
@@ -287,15 +318,18 @@ def load_theme(root: Path, name: str) -> Theme:
     for face in theme.font_faces or []:
         if not (d / face.get("file", "")).is_file():
             raise Fail("RENDER_THEME", f"Font file {face.get('file')} declared in theme.toml does not exist.", file=str(d / "theme.toml"))
-    logo = theme.bumper["logo"]
-    if logo and Path(logo).suffix.lower() in (".eps", ".ai", ".ps", ".pdf"):
-        raise Fail("RENDER_THEME", f"The logo {logo} is {Path(logo).suffix.upper()[1:]}, which a browser cannot draw.",
-                   file=str(d / "theme.toml"), hint="Use a PNG or SVG export of the logo (brand kits usually include both).")
+    for logo in (theme.bumper["logo"], theme.document["logo"]):
+        if logo and Path(logo).suffix.lower() in (".eps", ".ai", ".ps", ".pdf"):
+            raise Fail("RENDER_THEME", f"The logo {logo} is {Path(logo).suffix.upper()[1:]}, which a browser cannot draw.",
+                       file=str(d / "theme.toml"), hint="Use a PNG or SVG export of the logo (brand kits usually include both).")
     for key in ("logo", "background_video"):
         rel = theme.bumper[key]
         if rel and not theme.asset(rel).is_file():
             raise Fail("RENDER_THEME", f"The bumper {key.replace('_', ' ')} {rel} named in theme.toml does not exist "
                        f"(looked for {theme.asset(rel)}).", file=str(d / "theme.toml"))
+    if theme.document["logo"] and not theme.asset(theme.document["logo"]).is_file():
+        raise Fail("RENDER_THEME", f"The document logo {theme.document['logo']} named in theme.toml does not exist "
+                   f"(looked for {theme.asset(theme.document['logo'])}).", file=str(d / "theme.toml"))
     b = theme.bumper
     # The intro only fades out; the outro fades in and out, so its fades must not overlap.
     if b["intro_seconds"] < b["fade_seconds"] or b["outro_seconds"] < 2 * b["fade_seconds"]:

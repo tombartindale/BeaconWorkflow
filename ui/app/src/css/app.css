@@ -115,6 +115,9 @@ body.body--dark a:not(.q-btn):not(.q-item):not(.q-tab):not(.cell) { color: var(-
 .thumb.missing { display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9; font-size: 12px; opacity: .6; cursor: default; }
 .lightbox-frame { position: relative; }
 .lightbox-frame img { display: block; width: 100%; }
+/* The dialog and most slide themes are both black, so without an edge the slide has no
+   visible boundary against the backdrop. */
+.lightbox-img { outline: 1px solid rgba(255, 255, 255, .35); box-shadow: 0 0 0 6px rgba(255, 255, 255, .06), 0 4px 24px rgba(0, 0, 0, .6); }
 .safe-area { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(192, 57, 43, .25); border-top: 2px dashed #c0392b; }
 .safe-area span { position: absolute; top: 4px; left: 6px; font-size: 11px; color: #fff; background: rgba(0, 0, 0, .6); padding: 0 4px; border-radius: 2px; }
 

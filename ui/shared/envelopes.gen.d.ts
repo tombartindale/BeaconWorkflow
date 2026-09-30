@@ -2409,7 +2409,7 @@ export interface BcnPackageEnvelope {
     slides?: number;
     duration?: number;
     files?: number;
-    transcoded?: boolean;
+    body_offset?: number;
   }[];
   artifacts: {
     path: string;
@@ -3191,6 +3191,8 @@ export interface BcnComposeEnvelope {
     topic: string;
     ok: boolean;
     skipped: boolean;
+    mode?: 'draft' | 'full';
+    subtitles?: 'sidecar' | 'burned';
     layout?: string;
     resolution?: unknown[];
     body_offset?: number;
@@ -3353,6 +3355,160 @@ export interface BcnQtiEnvelope {
     questions?: number;
     multiple_response?: number;
     package?: string | null;
+  }[];
+  artifacts: {
+    path: string;
+    kind: string;
+    bytes: number;
+    sha256: string;
+  }[];
+  diagnostics: {
+    level: 'error' | 'warn' | 'info';
+    code:
+      | 'BUMPER_NO_LOGO'
+      | 'BUMPER_NO_TITLE'
+      | 'BUMPER_TITLE_FIT'
+      | 'CANCELLED'
+      | 'COMPOSE_BUMPER'
+      | 'CONFIG_INVALID'
+      | 'CUE_CUT'
+      | 'CUE_CUT_AT_BOUNDARY'
+      | 'CUE_HEAVY_DIVERGENCE'
+      | 'CUE_INSERTION'
+      | 'CUE_LOW_CONFIDENCE'
+      | 'CUE_MID_CUE'
+      | 'CUE_MISTRANSCRIPTION'
+      | 'CUE_PAIR_MISMATCH'
+      | 'CUE_PARAPHRASE'
+      | 'CUE_SHEET_INVALID'
+      | 'CUE_SRT_ORDER'
+      | 'CUE_SRT_PAST_END'
+      | 'CUE_SRT_SHORT'
+      | 'DOC_DUPLICATE_ID'
+      | 'DOC_HEADING_MISSING'
+      | 'DOC_ID_FORMAT'
+      | 'DOC_MISSING'
+      | 'DOC_OUTCOME_UNKNOWN'
+      | 'DOC_TOPIC_NOT_IN_MAP'
+      | 'EDIT_CONFLICT'
+      | 'EDIT_SAVED'
+      | 'FS_CHECKSUM_MISMATCH'
+      | 'FS_CORRUPT'
+      | 'FS_EMPTY'
+      | 'FS_MISSING'
+      | 'FS_NOT_HYDRATED'
+      | 'FS_SYNC_CONFLICT'
+      | 'FS_UNEXPECTED_FILE'
+      | 'FS_UNSTABLE'
+      | 'FS_WRONG_CASE'
+      | 'INTAKE_EXISTS_DIFFERS'
+      | 'INTAKE_NOT_IN_MAP'
+      | 'INTAKE_NO_TOPICS'
+      | 'INTAKE_UNCHANGED'
+      | 'INTAKE_WRITTEN'
+      | 'INTERNAL'
+      | 'MD_ASSET_MISSING'
+      | 'MD_DATE'
+      | 'MD_DEICTIC'
+      | 'MD_EN_INVALID'
+      | 'MD_FORBIDDEN'
+      | 'MD_FRONT_MATTER_KEYS'
+      | 'MD_FRONT_MATTER_MISSING'
+      | 'MD_FRONT_MATTER_VALUE'
+      | 'MD_IMAGE_ALT'
+      | 'MD_IMAGE_PATH'
+      | 'MD_NO_SLIDES'
+      | 'MD_PARITY_BREAK'
+      | 'MD_PARITY_COUNT'
+      | 'MD_SAY_IN_ZH'
+      | 'MD_SAY_MISSING'
+      | 'MD_SAY_MULTIPLE'
+      | 'MD_SAY_NOT_LAST'
+      | 'MD_SLIDE_COUNT'
+      | 'MD_SLIDE_TITLE_MISSING'
+      | 'MD_SLIDE_WORDS'
+      | 'MD_TITLE_LENGTH'
+      | 'MD_TOPIC_ID_FORMAT'
+      | 'MD_TOPIC_ID_PATH'
+      | 'MD_WORD_COUNT'
+      | 'MD_ZH_CHARS'
+      | 'MD_ZH_UNTRANSLATED'
+      | 'PATH_OUTSIDE_ROOT'
+      | 'PKG_COUNT_MISMATCH'
+      | 'PKG_TRANSCODED'
+      | 'QA_ACTIVITY_MISSING'
+      | 'QA_ARTEFACT_MISSING'
+      | 'QA_ARTEFACT_STALE'
+      | 'QA_ASSET_OUTSTANDING'
+      | 'QA_DIR_NOT_IN_MAP'
+      | 'QA_OUTCOME_UNCOVERED'
+      | 'QA_TOPIC_NO_DIR'
+      | 'QA_UNIT_DURATION'
+      | 'QA_UNREVIEWED_MISTRANSCRIPTION'
+      | 'QA_VIDEO_DURATION'
+      | 'QA_ZH_OVERFLOW'
+      | 'QUIZ_FORMAT'
+      | 'QUIZ_NOT_A_QUIZ'
+      | 'QUIZ_NO_CORRECT'
+      | 'QUIZ_NO_FEEDBACK'
+      | 'QUIZ_NO_QUESTIONS'
+      | 'RENDER_FAILED'
+      | 'RENDER_OVERFLOW'
+      | 'RENDER_RESOLUTION'
+      | 'RENDER_SAFE_AREA'
+      | 'RENDER_SLIDE_COUNT'
+      | 'RENDER_THEME'
+      | 'REVIEW_UNKNOWN_ITEM'
+      | 'ROOT_NOT_FOUND'
+      | 'SRT_CORRECTION'
+      | 'SRT_CUE_DURATION'
+      | 'SRT_LINE_LENGTH'
+      | 'SRT_PARSE'
+      | 'SRT_ZH_CUE_COUNT'
+      | 'SRT_ZH_TIMING'
+      | 'SRT_ZH_UNTRANSLATED'
+      | 'STEP_PREREQUISITE'
+      | 'SYNC_CONFLICT'
+      | 'SYNC_COPIED'
+      | 'SYNC_DOWNLOAD_FAILED'
+      | 'SYNC_NOT_CONFIGURED'
+      | 'SYNC_ONE_SIDE'
+      | 'SYNC_REMOTE_CONFLICT_COPY'
+      | 'SYNC_REMOTE_MISSING'
+      | 'SYNC_UNSTABLE'
+      | 'TOOL_FAILED'
+      | 'TOOL_MISSING'
+      | 'TOOL_VERSION'
+      | 'USAGE'
+      | 'XL_EXPORTED'
+      | 'XL_IMPORTED'
+      | 'XL_NOT_READY'
+      | 'XL_UNKNOWN_FILE';
+    topic?: string | null;
+    lang?: 'en' | 'zh' | null;
+    file?: string | null;
+    line?: number | null;
+    slide?: number | null;
+    message: string;
+    hint?: string | null;
+    data?: {};
+  }[];
+}
+
+// -- bcn coursemap -------------------------------------------------------------
+export interface BcnCoursemapEnvelope {
+  tool: 'coursemap';
+  schema: 1;
+  target: string;
+  ok: boolean;
+  cancelled?: boolean;
+  started: string;
+  duration_ms: number;
+  results: {
+    topic: string;
+    ok: boolean;
+    skipped: boolean;
+    pdf?: string | null;
   }[];
   artifacts: {
     path: string;

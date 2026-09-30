@@ -46,7 +46,11 @@ export type TopicStatus = Omit<GenTopic, 'en' | 'zh' | 'artifacts' | 'outcomes'>
 };
 /** A unit quiz (activity.md with type: quiz) and its QTI package from bcn qti. */
 export interface QuizInfo { questions: number; package: string; exists: boolean; stale: boolean | null }
-export interface ModuleDocument { path: string; exists: boolean; errors: number; warnings: number; quiz: QuizInfo | null }
+/** course-map.md's printed PDF from bcn coursemap. */
+export interface CoursemapPdfInfo { path: string; exists: boolean; stale: boolean | null }
+export interface ModuleDocument {
+  path: string; exists: boolean; errors: number; warnings: number; quiz: QuizInfo | null; pdf: CoursemapPdfInfo | null;
+}
 export interface ModuleSummary {
   topics: number; units: string[]; en: Record<string, number>; zh: Record<string, number>; complete: Record<Lang, number>;
   blocked: number; stale: number; cloud: number; diagnostics: Record<Level, number>; unreviewed: number;

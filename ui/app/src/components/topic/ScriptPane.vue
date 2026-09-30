@@ -28,7 +28,7 @@ const scriptFiles = computed(() => (t.status.value?.artifacts || []).filter((a) 
         :download="a.path.endsWith('.pdf') ? undefined : a.path.split('/').pop()">{{ LABEL[a.path.split('.').pop()!] }}</a>
       <StateChip v-if="scriptFiles[0].stale" kind="stale" label="out of date" />
     </q-card-section>
-    <q-card-section v-if="!s" class="text-grey-7">{{ lang === 'en' ? 'No topic.md yet. Paste it in Intake.' : 'No topic.zh.md yet.' }}</q-card-section>
+    <q-card-section v-if="!s" class="text-grey-7">{{ lang === 'en' ? 'No topic.md yet.' : 'No topic.zh.md yet.' }}</q-card-section>
     <template v-else>
       <q-card-section v-if="lang === 'en'" class="row items-center gap-sm q-py-sm">
         <span><strong>{{ s.words }}</strong> words</span>

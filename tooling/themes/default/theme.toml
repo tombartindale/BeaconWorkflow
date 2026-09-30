@@ -12,6 +12,12 @@ height = 1080
 # Pixels reserved at the bottom of the frame for burned-in subtitles.
 # PLACEHOLDER: depends on the partner's composite layout, not yet agreed.
 bottom = 216
+# Fraction of the width kept clear on the right, for compose's side_by_side layout: the
+# presenter fills that share of the frame, so slide content must never reach it. 0.5 means
+# the right half; 1.0 (the default when unset) reserves nothing. Must match compose's own
+# side_by_side split (programme.toml [compose]), or the two will disagree about where the
+# line falls.
+right = 0.5
 
 [font_size]
 # Chinese needs a larger size for equivalent legibility.
@@ -78,3 +84,11 @@ color = "#ffffff"        # intro title, over the background video
 intro_seconds = 5.0
 outro_seconds = 5.0
 fade_seconds = 0.75      # the intro fades out to black; the outro fades in and out
+
+[document]
+# Printed documents on a white page (bcn coursemap): a dark mark, not the white [bumper] logo
+# above, which only reads against the dark outro/video background.
+# Extracted from the EPS's embedded preview (284x90, low-res); replace with a proper vector
+# export when one is available.
+logo = "../../../assets/NU_Logo_Black.png"
+logo_height = 28   # points, in the printed header

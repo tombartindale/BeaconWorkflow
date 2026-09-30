@@ -2,7 +2,8 @@
 // The topic's pipeline in both languages: English steps on one row, Mandarin on the row below,
 // branching off between English cues and subtitles. Each step shows whether bcn says it is done,
 // out of date, failed or not run, with the next step marked. Clicking a step runs it in its
-// row's language. Tools that are not steps sit below and use the language chosen at the top.
+// row's language. Tools that are not steps sit below; Intro/outro carries its own language
+// switch next to it, since that is the one tool here that needs to be told which to make.
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { StepState } from '@beacon/shared';
 import { fmtAgo, LANG_NAME, STEP_HELP } from '@/format';
@@ -36,12 +37,12 @@ const WAIT_HELP: Record<string, string> = {
 
 const LANGS = ['en', 'zh'] as const;
 
-const props = defineProps<{ lang: 'en' | 'zh' }>();
 const emit = defineEmits<{ verify: [] }>();
 const t = inject(TOPIC)!;
 const beacon = useBeacon();
 const force = ref(false);
 const noBumpers = ref(true);
+const bumpersLang = ref<'en' | 'zh'>('en');  // which language Intro/outro makes
 
 const stateOf = (lang: 'en' | 'zh') => t.status.value?.[lang] ?? null;
 
@@ -135,17 +136,14 @@ async function run(step: string, lang: 'en' | 'zh') {
   await beacon.runJob(step, [t.rel], args);
 }
 
-// These two make files the page links to, so it waits for them and says where they are.
-async function runAndReport(command: string, args: Record<string, string | boolean>, done: string, failed: string) {
-  const job = await beacon.runJob(command, [t.rel], args);
+// Intro/outro makes files the Slides pane links to, so it waits for them and says where they are.
+async function bumpers() {
+  const job = await beacon.runJob('bumpers', [t.rel], { lang: bumpersLang.value, ...(force.value ? { force: true } : {}) });
   const result = await beacon.awaitJob(job.id);
   await t.reload();
-  if (result.state === 'done') beacon.toast(done); else beacon.toast(failed, true);
+  if (result.state === 'done') beacon.toast('Intro and outro ready: see the top of the Slides pane.');
+  else beacon.toast('The intro and outro could not be made; see Jobs.', true);
 }
-const recordingScript = () => runAndReport('script', force.value ? { force: true } : {},
-  'Recording script ready: see the links at the top of the Script pane.', 'The recording script could not be made; see Jobs.');
-const bumpers = () => runAndReport('bumpers', { lang: props.lang, ...(force.value ? { force: true } : {}) },
-  'Intro and outro ready: see the top of the Slides pane.', 'The intro and outro could not be made; see Jobs.');
 </script>
 
 <template>
@@ -206,12 +204,15 @@ const bumpers = () => runAndReport('bumpers', { lang: props.lang, ...(force.valu
         <q-tooltip max-width="320px">Leave the intro and outro off the draft video made by compose. Quicker, and the player's times then match the cue sheet exactly. Delivered files are unaffected.</q-tooltip>
       </q-checkbox>
       <q-space />
-      <q-btn flat dense no-caps icon="description" label="Recording script" @click="recordingScript">
-        <q-tooltip max-width="320px">{{ STEP_HELP.script }} Links appear at the top of the Script pane.</q-tooltip>
-      </q-btn>
-      <q-btn flat dense no-caps icon="movie" label="Intro/outro" @click="bumpers">
-        <q-tooltip max-width="320px">{{ STEP_HELP.bumpers }} In {{ LANG_NAME[lang] }}, the language chosen at the top right. They appear at the top and bottom of the Slides pane.</q-tooltip>
-      </q-btn>
+      <span class="row items-center gap-xs">
+        <q-btn-toggle v-model="bumpersLang" dense no-caps unelevated size="sm" toggle-color="primary"
+          :options="[{ label: 'EN', value: 'en' }, { label: 'ZH', value: 'zh' }]">
+          <q-tooltip>Which language Intro/outro makes next</q-tooltip>
+        </q-btn-toggle>
+        <q-btn flat dense no-caps icon="movie" label="Intro/outro" @click="bumpers">
+          <q-tooltip max-width="320px">{{ STEP_HELP.bumpers }} In {{ LANG_NAME[bumpersLang] }}, chosen just to its left. They appear at the top and bottom of the Slides pane.</q-tooltip>
+        </q-btn>
+      </span>
       <q-btn flat dense no-caps icon="slideshow" label="Teleprompter" :href="`#/prompt/${t.id}`" target="_blank">
         <q-tooltip max-width="320px">Open the narration as a full-screen teleprompter in a new tab. Space plays and pauses; the arrow keys change speed and jump between slides.</q-tooltip>
       </q-btn>

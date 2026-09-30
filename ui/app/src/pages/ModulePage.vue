@@ -30,6 +30,7 @@ const units = computed(() => [...new Set(rows.value.map((r) => r.unit))].sort())
 const codes = computed(() => [...new Set(rows.value.map((r) => r.code))].sort());
 const grid = computed(() => units.value.map((unit) => ({
   unit, cells: codes.value.map((c) => rows.value.find((x) => x.unit === unit && x.code === c) ?? null),
+  activity: (m.value?.documents || []).find((d) => d.path === `${props.module}/${unit}/activity.md`) ?? null,
 })));
 const stageOptions = computed(() => [{ label: 'any stage', value: '' },
   ...[...new Set([...(rows.value[0]?.en.stages || []), ...(rows.value[0]?.zh.stages || [])])].map((s) => ({ label: STAGE_LABEL[s], value: s }))]);
@@ -106,8 +107,16 @@ async function exportQuizzes() {
   if (ok) await beacon.runJob('qti', [props.module], {});
 }
 
+async function exportCourseMapPdf() {
+  const job = await beacon.runJob('coursemap', [props.module], {});
+  const result = await beacon.awaitJob(job.id);
+  if (result.state === 'done') beacon.toast('Course map PDF ready: see Module documents.');
+  else beacon.toast('The course map PDF could not be made; see Jobs.', true);
+}
+
+// Unit activities show in their unit's grid row (see grid.activity above), not here; this box is module-wide documents only.
 const docs = computed(() => (m.value?.documents || [])
-  .filter((d) => d.exists || d.path.endsWith('course-map.md') || d.path.endsWith('/activity.md')));
+  .filter((d) => !d.path.endsWith('/activity.md') && (d.exists || d.path.endsWith('course-map.md'))));
 </script>
 
 <template>
@@ -138,12 +147,20 @@ const docs = computed(() => (m.value?.documents || [])
               <q-badge v-if="d.errors" color="negative" floating>{{ d.errors }}</q-badge>
               <q-badge v-else-if="d.warnings" color="warning" floating>{{ d.warnings }}</q-badge>
             </q-btn>
+            <q-btn v-else flat dense no-caps disable :label="`${d.path.slice(module.length + 1)} — missing`">
+              <q-tooltip>Not in the working copy yet</q-tooltip>
+            </q-btn>
             <q-btn v-if="d.quiz?.exists" flat dense no-caps icon="download" :color="d.quiz.stale ? 'warning' : 'primary'"
               :label="d.quiz.stale ? 'QTI (out of date)' : 'QTI'" :href="fileUrl(d.quiz.package, null, 'download=1')">
               <q-tooltip>{{ d.quiz.stale ? 'The quiz has changed since this package was made; export again.' : `${plural(d.quiz.questions, 'question')}, ready to import into the LMS` }}</q-tooltip>
             </q-btn>
-            <q-btn v-else flat dense no-caps disable :label="`${d.path.slice(module.length + 1)} — missing`">
-              <q-tooltip>Not in the working copy yet</q-tooltip>
+            <q-btn v-if="d.pdf?.exists" flat dense no-caps icon="download" :color="d.pdf.stale ? 'warning' : 'primary'"
+              :label="d.pdf.stale ? 'PDF (out of date)' : 'PDF'" :href="fileUrl(d.pdf.path, null, 'download=1')">
+              <q-tooltip max-width="320px">{{ d.pdf.stale ? 'course-map.md has changed since this PDF was made; export again.' : STEP_HELP.coursemap }}</q-tooltip>
+            </q-btn>
+            <q-btn v-if="d.pdf && (!d.pdf.exists || d.pdf.stale)" outline dense no-caps icon="picture_as_pdf"
+              :label="d.pdf.exists ? 'Update PDF' : 'Export PDF'" @click="exportCourseMapPdf">
+              <q-tooltip max-width="320px">{{ STEP_HELP.coursemap }}</q-tooltip>
             </q-btn>
           </template>
         </q-card-section>
@@ -179,7 +196,21 @@ const docs = computed(() => (m.value?.documents || [])
             <thead><tr><th></th><th v-for="c in codes" :key="c">{{ c }}</th></tr></thead>
             <tbody>
               <tr v-for="row in grid" :key="row.unit">
-                <th class="unit">{{ row.unit }}<span class="t">{{ m.unit_titles?.[row.unit] || '' }}</span></th>
+                <th class="unit">
+                  {{ row.unit }}<span class="t">{{ m.unit_titles?.[row.unit] || '' }}</span>
+                  <span v-if="row.activity?.exists" class="row items-center gap-xs q-mt-xs">
+                    <q-btn outline dense no-caps size="sm" :to="`/doc/${row.activity.path}`" label="activity">
+                      <q-badge v-if="row.activity.errors" color="negative" floating>{{ row.activity.errors }}</q-badge>
+                      <q-badge v-else-if="row.activity.warnings" color="warning" floating>{{ row.activity.warnings }}</q-badge>
+                    </q-btn>
+                    <q-btn v-if="row.activity.quiz?.exists" flat dense no-caps size="sm" icon="download"
+                      :color="row.activity.quiz.stale ? 'warning' : 'primary'"
+                      :label="row.activity.quiz.stale ? 'QTI (out of date)' : 'QTI'"
+                      :href="fileUrl(row.activity.quiz.package, null, 'download=1')">
+                      <q-tooltip>{{ row.activity.quiz.stale ? 'The quiz has changed since this package was made; export again.' : `${plural(row.activity.quiz.questions, 'question')}, ready to import into the LMS` }}</q-tooltip>
+                    </q-btn>
+                  </span>
+                </th>
                 <td v-for="(r, i) in row.cells" :key="codes[i]">
                   <a v-if="r" :href="`#/topic/${r.topic}`" @click="cellClick($event, r)"
                     :class="['cell', { one: langs.length === 1, cloud: isCloud(r), planned: r.en.stage === 'planned', selected: state.selected.has(r.topic), dim: !matches(r) }]">

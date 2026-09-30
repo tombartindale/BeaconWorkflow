@@ -43,6 +43,37 @@ def test_forbidden_deictic_and_dates(tree):
     assert deictic.line and deictic.slide == 1
 
 
+def test_localization(tree):
+    (tree / "programme.toml").write_text('[programme]\nname = "test"\n\n[validate]\nlocalization = ["Springfield University"]\n')
+    text = topic_md().replace("gives one example", "gives one example from Springfield University")
+    write(tree, text)
+    errs, diags = run(tree)
+    assert "MD_LOCALIZATION" in errs
+    loc = next(d for d in diags if d.code == "MD_LOCALIZATION")
+    assert loc.slide == 1 and loc.data["match"] == "Springfield University"
+
+
+def test_person_names(tree):
+    (tree / "programme.toml").write_text(
+        '[programme]\nname = "test"\n\n[validate]\nnames = true\nnames_allow = ["Data Science"]\n')
+    text = topic_md().replace(
+        "gives one example",
+        "gives one example, as Dr Jane Smith showed in her work on Data Science")
+    write(tree, text)
+    errs, diags = run(tree)
+    assert "MD_PERSON_NAME" in errs
+    hits = {d.data["match"] for d in diags if d.code == "MD_PERSON_NAME"}
+    assert any("Jane Smith" in h for h in hits)
+    assert not any("Data Science" in h for h in hits)
+
+
+def test_person_names_off_by_default(tree):
+    text = topic_md().replace("gives one example", "gives one example, as Dr Jane Smith showed")
+    write(tree, text)
+    errs, _ = run(tree)
+    assert "MD_PERSON_NAME" not in errs
+
+
 def test_missing_asset_and_alt(tree):
     write(tree, topic_md().replace("- Point one", "![](assets/nope.png)\n- Point one", 1))
     errs, _ = run(tree)

@@ -27,11 +27,29 @@ EN_DATE_PATTERNS = [
 ]
 EN_WEEKDAY_PATTERN = re.compile(r"\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b", re.IGNORECASE)
 
+# Candidate person names: a title (Dr, Professor, Mr, ...) followed by capitalised word(s), or
+# two-plus consecutive capitalised words not at the start of a sentence (so an ordinary sentence-
+# initial capital is not itself a hit). Heuristic, not NLP: it is a prompt to a human, not a fact.
+_HONORIFIC = r"(?:Dr|Mr|Mrs|Ms|Miss|Prof|Professor|Sir|Dame)\.?"
+_CAP_WORD = r"[A-Z][a-z]+(?:['’][A-Z]?[a-z]+)?"
+NAME_PATTERNS = [
+    re.compile(rf"\b{_HONORIFIC}\s+{_CAP_WORD}(?:\s+{_CAP_WORD})?\b"),
+    re.compile(rf"(?<!^)(?<![.!?]\s){_CAP_WORD}(?:\s+{_CAP_WORD})+\b"),
+]
+# Common capitalised phrases a heuristic like this will otherwise flag constantly: title-case
+# headings, place names already covered by [validate].localization, institution words, etc.
+NAME_STOPWORDS = {
+    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+    "january", "february", "march", "april", "may", "june", "july", "august",
+    "september", "october", "november", "december",
+}
+
 # Checks that are a matter of editorial judgement: a person may acknowledge a
 # particular finding (bcn ack) and the pipeline carries on. Structural checks
 # (missing narration, parity, front matter, assets) can never be acknowledged.
 ACKABLE = {"MD_DATE", "MD_FORBIDDEN", "MD_DEICTIC", "MD_WORD_COUNT", "MD_SLIDE_WORDS", "MD_TITLE_LENGTH",
-           "MD_SLIDE_COUNT", "MD_ZH_CHARS", "MD_SLIDE_TITLE_MISSING", "MD_ZH_UNTRANSLATED"}
+           "MD_SLIDE_COUNT", "MD_ZH_CHARS", "MD_SLIDE_TITLE_MISSING", "MD_ZH_UNTRANSLATED", "MD_LOCALIZATION",
+           "MD_PERSON_NAME"}
 ZH_DATE_PATTERNS = [
     re.compile(r"\d{2,4}\s*年\s*\d{1,2}\s*月"),
     re.compile(r"\d{1,2}\s*月\s*\d{1,2}\s*[日号]"),
@@ -186,6 +204,9 @@ class RuleSet:
     def forbidden_list(self) -> list[str]:
         return list(self.cfg["validate"]["forbidden"])
 
+    def localization_list(self) -> list[str]:
+        return list(self.cfg["validate"]["localization"])
+
     def date_patterns(self) -> list[re.Pattern[str]]:
         return EN_DATE_PATTERNS + ([EN_WEEKDAY_PATTERN] if self.cfg["validate"].get("date_weekdays") else [])
 
@@ -195,6 +216,7 @@ class RuleSet:
     def text(self, p: ParsedTopic) -> list[Diagnostic]:
         out = []
         forbidden = [(w, _phrase_re(w)) for w in self.forbidden_list() if w.strip()]
+        localized = [(w, _phrase_re(w)) for w in self.localization_list() if w.strip()]
         for s in p.slides:
             for t in self.texts(s):
                 for rx in self.date_patterns():
@@ -206,6 +228,12 @@ class RuleSet:
                 for w, rx in forbidden:
                     if rx.search(t):
                         out.append(self.d("MD_FORBIDDEN", f"Slide {s.index} contains the forbidden string '{w}'.", self.locate(p, s, rx), s.index,
+                                          match=w))
+                for w, rx in localized:
+                    if rx.search(t):
+                        out.append(self.d("MD_LOCALIZATION", f"Slide {s.index} names '{w}', which ties this content to one place.",
+                                          self.locate(p, s, rx), s.index,
+                                          hint="Generalise the reference, or acknowledge it if this topic is deliberately local.",
                                           match=w))
         return out
 
@@ -256,6 +284,23 @@ class EnglishRules(RuleSet):
                 if rx.search(s.say_text):
                     out.append(self.d("MD_DEICTIC", f"Slide {s.index} narration says '{ph}', but the presenter is recorded without the slides in shot.",
                                       self.locate(p, s, rx), s.index, hint="Describe the thing rather than point at it.", match=ph))
+        if self.cfg["validate"]["names"]:
+            allow = {w.lower() for w in self.cfg["validate"]["names_allow"]}
+            for s in p.slides:
+                for t in self.texts(s):
+                    seen: set[str] = set()
+                    for rx in NAME_PATTERNS:
+                        for m in rx.finditer(t):
+                            name = m.group(0).lstrip("!?.").strip()
+                            key = name.lower()
+                            if key in seen or key in allow or name.split()[0].lower() in NAME_STOPWORDS:
+                                continue
+                            seen.add(key)
+                            lr = re.compile(re.escape(name))
+                            out.append(self.d("MD_PERSON_NAME", f"Slide {s.index} may name a person: '{name}'.",
+                                              self.locate(p, s, lr), s.index,
+                                              hint="If this names a real person, generalise it, or acknowledge it if the topic is about them specifically.",
+                                              match=name))
         return out
 
 
@@ -270,6 +315,9 @@ class MandarinRules(RuleSet):
 
     def forbidden_list(self) -> list[str]:
         return list(self.cfg["validate_zh"]["forbidden"])
+
+    def localization_list(self) -> list[str]:
+        return list(self.cfg["validate_zh"]["localization"])
 
     def date_patterns(self) -> list[re.Pattern[str]]:
         return ZH_DATE_PATTERNS

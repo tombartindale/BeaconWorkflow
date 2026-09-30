@@ -198,7 +198,8 @@ def run(args: argparse.Namespace, env: Envelope, target: Target) -> None:
             documents.append({"path": f"{m}/{rel}", "exists": (mdir / rel).is_file(),
                               "errors": sum(1 for d in mine if d.level == "error"),
                               "warnings": sum(1 for d in mine if d.level == "warn"),
-                              "quiz": _quiz(target.root, m, rel)})
+                              "quiz": _quiz(target.root, m, rel),
+                              "pdf": _coursemap_pdf(target.root, m, rel)})
         module_docs[m] = {
             "course_map": ctx.course_map.path.is_file(),
             "documents": documents,
@@ -225,6 +226,17 @@ def _quiz(root: Path, module: str, rel: str) -> dict[str, Any] | None:
     exists = pkg.is_file()
     return {"questions": len(quiz.questions), "package": str(pkg.relative_to(root)), "exists": exists,
             "stale": (not fsutil.is_fresh([pkg], [src])) if exists else None}
+
+
+def _coursemap_pdf(root: Path, module: str, rel: str) -> dict[str, Any] | None:
+    """For course-map.md: its printed PDF (bcn coursemap), if made."""
+    if rel != "course-map.md":
+        return None
+    src = root / module / rel
+    out = root / module / "build" / "course-map.pdf"
+    exists = out.is_file()
+    return {"path": str(out.relative_to(root)), "exists": exists,
+            "stale": (not fsutil.is_fresh([out], [src])) if exists else None}
 
 
 def _module_title(p: Path) -> str | None:

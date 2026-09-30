@@ -6,15 +6,21 @@
  *
  * Variables injected by bcn render from theme.toml (do not hard-code them here):
  *   --bcn-safe-bottom   subtitle safe area at the bottom of the frame
+ *   --bcn-safe-right    right padding that keeps content clear of a p-in-p presenter
+ *                       (theme.toml's safe_area.right, already converted to a padding
+ *                       width in pixels: 0 when unset, so nothing changes by default)
  *   --bcn-font-size     base size for the language being rendered
  *   font-family         the language's font stack
+ *
+ * bcn render's overflow check reads section's own computed right padding back, so any
+ * block that reaches into the reserved space is always caught, never just clipped silently.
  */
 
 section {
   width: 1920px;
   height: 1080px;
   box-sizing: border-box;
-  padding: 96px 128px calc(var(--bcn-safe-bottom, 216px) + 40px) 128px;
+  padding: 56px calc(var(--bcn-safe-right, 0px) + 56px) calc(var(--bcn-safe-bottom, 216px) + 40px) 56px;
   background: #000000;
   color: #ffffff;
   font-size: var(--bcn-font-size, 44px);
@@ -25,17 +31,6 @@ section {
   gap: 0.4em;
 }
 
-section::before {
-  /* accent rule */
-  content: "";
-  position: absolute;
-  left: 128px;
-  top: 64px;
-  width: 120px;
-  height: 8px;
-  background: #ffffff;
-}
-
 h1, h2, h3 {
   margin: 0 0 0.3em;
   line-height: 1.15;
@@ -43,7 +38,7 @@ h1, h2, h3 {
   font-weight: 900; /* house style: titles in Azo Sans Black (theme.toml title_weight) */
 }
 
-h1 { font-size: 2.1em; }
+h1 { font-size: 1.6em; }
 h2 { font-size: 1.6em; }
 h3 { font-size: 1.25em; }
 

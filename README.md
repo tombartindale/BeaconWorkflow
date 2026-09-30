@@ -66,7 +66,7 @@ Exit codes are 0 OK, 1 validation, 2 usage, 3 missing input, 4 tool failure, and
 | `edit/master.mp4`, `edit/master.srt`, `edit/master.zh.srt` | From the editor; the Mandarin SRT comes from the translator |
 | `review.json` | Human decisions: hand-placed cues and mis-transcription rulings. It is content, so it lives outside `build/`. |
 | `translation.json` | Record of exports, which drives the Mandarin "out for translation" stage |
-| `build/` | Step results, `slides/{en,zh}/`, `deck.{en,zh}.pdf`, `<id>.cues.csv`, `cues-report.json`, `subtitles/`, `bumpers/`, `draft.mp4` |
+| `build/` | Step results, `slides/{en,zh}/`, `deck.{en,zh}.pdf`, `<id>.cues.csv`, `cues-report.json`, `subtitles/` (including the delivered sidecar SRT), `bumpers/`, `composed.{,zh.}mp4` (the delivered video), `draft.{,zh.}mp4` (`--draft` only, for checking) |
 | `out/` | The delivery package, with `manifest.json` (and `manifest.zh.json`) |
 
 **Freshness is judged by modification time.** Copy trees with `cp -Rp` or `rsync -a`. A plain `cp -R` makes everything look stale.
@@ -123,7 +123,7 @@ For a separate teleprompter app we suggest [QPrompt](https://qprompt.app/), whic
 
 The look is part of the theme, under `[bumper]` in `theme.toml`: logo file, colours, durations and fade. The logo sits in the theme directory. Until one is set, every run warns `BUMPER_NO_LOGO`.
 
-Once a topic has bumpers, `compose` wraps the draft in them in place of the programme-wide `[bumpers]` files, and `package` delivers them as separate files beside the master. Neither the master nor the cue sheet is changed. If the title changes, the bumpers go stale: compose skips them, and package refuses to run until `bcn bumpers` is run again.
+Once a topic has bumpers, `compose` bakes them into the delivered video in place of the programme-wide `[bumpers]` files, and `package` also delivers them as their own files beside it. Neither the master nor the cue sheet is changed. If the title changes, the bumpers go stale: compose skips them, and package refuses to run until `bcn bumpers` is run again.
 
 ### Quizzes for the LMS
 
@@ -234,7 +234,7 @@ bcn sync working_area --push               # local script edits, review decision
 
 These are placeholders in config until someone confirms them:
 
-- **Partner delivery spec:** `[delivery]` in `programme.toml`. Transcoding is off; when on, both checksums are recorded.
+- **Partner delivery spec:** `[delivery]` in `programme.toml`. This is what `compose` encodes the delivered video to; there is no separate transcode step or toggle any more, since every full compose is already a from-scratch encode to this spec.
 - **Composite layout and subtitle safe area:** `[compose]` in `programme.toml`, and `safe_area.bottom` (216 px) in `theme.toml`.
 - **Subtitle format:** `[subtitles] format = "srt"`. VTT can be switched on.
 - **Cue thresholds:** tune against a real edited topic. Everything here was tested on synthetic media.

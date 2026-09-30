@@ -52,7 +52,8 @@ bcn validate <path>              structure and content checks
 bcn render <path> [--lang en] [--theme NAME]    markdown to slide images and PDF
 bcn cues <path>                  match script to SRT, emit the slide cue sheet
 bcn subtitles <path>             convert or normalise the supplied SRT
-bcn compose <path> [--lang en] [--theme NAME] [--no-bumpers]   draft composite video
+bcn compose <path> [--lang en] [--theme NAME] [--no-bumpers] [--draft] [--burn-subtitles]
+                                                                  the delivered video
 bcn status <path>                current state of every topic beneath the path
 bcn package <path>               assemble the delivery folder
 bcn qa <path>                    run every check, emit a report
@@ -203,15 +204,22 @@ One row per slide, ascending, first row always zero. Row count equals slide coun
 ### Delivery package, `out/`
 
 ```
-KV7015-U01-T01.mp4
+KV7015-U01-T01.mp4           compose's output: slides, presenter, bumpers baked in
 KV7015-U01-T01-s01.png ... -sNN.png
-KV7015-U01-T01.en.srt
-KV7015-U01-T01.cues.csv
-KV7015-U01-T01.md          slide source, narration stripped
+KV7015-U01-T01.en.srt        compose's sidecar, shifted by body_offset
+KV7015-U01-T01.cues.csv      the master's own timing, never shifted
+KV7015-U01-T01.md            slide source, narration stripped
+KV7015-U01-T01.intro.en.mp4, KV7015-U01-T01.outro.en.mp4   if the topic has bumpers
 manifest.json
 ```
 
-`manifest.json` lists every file with size and SHA-256, plus topic id, slide count, duration and build timestamp.
+`manifest.json` lists every file with size and SHA-256, plus topic id, slide count, duration,
+build timestamp and `body_offset` (the intro's duration, in seconds, applied to shift the
+delivered SRT: zero if the topic has no intro). The delivered `.mp4` and `.srt` are
+compose's; the cue sheet is the untouched master timing compose worked from. Mandarin's
+`manifest.zh.json` describes its own `<id>.zh.mp4` (the same presenter footage, its own
+slides, bumpers and subtitles) the same way, and does not repeat `<id>.cues.csv`, which is
+shared and delivered once by the English package.
 
 ---
 
@@ -240,12 +248,17 @@ Both languages run through the same commands, but they are not symmetrical, and 
 **Run order is not build order.** At runtime the sequence is fixed and the tools must enforce it:
 
 ```
-validate → render                     before recording
-                                      [ record and edit, outside the pipeline ]
-cues → subtitles → package → qa       once the edit and SRT arrive
-compose                               optional, any time after cues
-render --lang zh → compose --lang zh  optional, once translation returns
+validate → render                                before recording
+                                                  [ record and edit, outside the pipeline ]
+cues → subtitles → compose → package → qa         once the edit and SRT arrive
+compose --draft                                   optional, any time after cues, for checking only
+render --lang zh → compose --lang zh → package --lang zh   optional, once translation returns
 ```
+
+`compose` sits between `subtitles` and `package` now: package delivers what compose builds,
+so it cannot run without a current, non-draft compose. `compose --draft` is still optional
+and available any time after `cues`, for checking cue timing quickly; its output is never
+delivered and never satisfies `package`'s prerequisite.
 
 Every timecode in the delivery package is measured from the start of the edited video supplied by the editor. If that file is re-cut, its SRT changes too and the cue sheet must be regenerated from the new pair. The tools enforce this by refusing to run against an SRT and a video with mismatched modification times or durations.
 
@@ -333,21 +346,34 @@ This is the cheapest caption proofread available, because the correct text alrea
 
 ### 5.4 `compose`
 
-Builds a draft video with the slides composited against the presenter, subtitles burned in, from material we already hold. Not a deliverable. Its purpose is to let us see what the finished topic will look like before the partner builds it, and to check our own outputs.
+Builds the delivered video: the slides composited against the presenter, with the topic's
+bumpers baked in, at the partner's delivery quality. This is what `package` copies into
+`out/`. `--draft` builds the old fast, small, watermarked, burned-in-subtitle file instead,
+for checking cue timing quickly; it is never delivered and never satisfies `package`'s
+prerequisite.
 
-Input: `edit/master.mp4`, the rendered slide images, `cues.csv`, and the subtitle file. `--lang zh` uses the Mandarin slide images and the translated subtitle file instead, and is the main reason this tool exists: it is the only way to find out whether Chinese text fits the slides and the safe area before anything is built downstream.
+Input: `edit/master.mp4`, the rendered slide images, `cues.csv`, and the subtitle file.
+`--lang zh` uses the Mandarin slide images, bumpers and subtitle file, composited against
+the same presenter footage (Mandarin has no video of its own): it is the only way to find
+out whether Chinese text fits the slides and the safe area before anything is delivered.
 
-Build a slide track from the PNGs, each held for the interval given by consecutive rows of the cue sheet and the last one running to the end of the video. Composite the presenter against it according to a layout defined in config, since the partner's composite layout is not yet agreed. Support at least: slide full frame with the presenter as an inset, and slide and presenter side by side. Burn the subtitles in, because seeing them in place is the point.
+Build a slide track from the PNGs, each held for the interval given by consecutive rows of the cue sheet and the last one running to the end of the video. Composite the presenter against it according to a layout defined in config, since the partner's composite layout is not yet agreed. Support at least: slide full frame with the presenter as an inset, and slide and presenter side by side.
 
-**Bumpers.** An intro and an outro can be prepended and appended. Paths come from `programme.toml`, overridable per module, and either may be absent. They are transcoded to match the body's resolution and frame rate if they do not already, and their audio is normalised to the body's level rather than left at whatever the source was. `--no-bumpers` skips them, which is what you want while iterating on timings.
+**Subtitles are not burned in by default.** A sidecar SRT is written instead
+(`build/subtitles/<id>.<lang>.delivery.srt`), its every cue shifted forward by the intro's
+duration so it lines up with the composed file's own timeline; `edit/master.srt` itself is
+only ever read, never written. `--burn-subtitles` burns them into the video instead and
+skips the sidecar, for anyone who still wants that.
 
-**Bumpers must never change the cue sheet.** Every timecode in `cues.csv` is relative to the first frame of the edited master, always, whatever is wrapped around it. `compose` applies the intro duration as an offset internally when it builds the slide track, and does not write shifted timings anywhere. If a composed video is ever delivered, the intro duration is recorded in the manifest as `body_offset` and the cue sheet stays as it is, so the partner can apply the offset themselves. Baking the offset into the cue sheet would mean two files claiming to be the timings, which is precisely the problem this pipeline exists to avoid.
+**Bumpers.** An intro and an outro can be prepended and appended. Paths come from `programme.toml`, overridable per module, and either may be absent. They are transcoded to match the body's resolution and frame rate if they do not already, and their audio is normalised to the body's level rather than left at whatever the source was. `--no-bumpers` skips them, which is what you want while iterating on timings. Delivery is not either/or: package delivers the bumpers baked into the composed video and, beside it, `<id>.intro.<lang>.mp4` / `<id>.outro.<lang>.mp4` as their own files, exactly as before.
 
-Output `build/draft.mp4`, visibly watermarked as a draft, at a reduced resolution so that a topic renders in a reasonable time. Never write it to `out/`.
+**Bumpers must never change the cue sheet.** Every timecode in `cues.csv` is relative to the first frame of the edited master, always, whatever is wrapped around it. `compose` applies the intro duration as an offset internally when it builds the slide track, and does not write shifted timings into `cues.csv`. The intro's duration is recorded as `body_offset`, in the envelope and in the delivered manifest, and is the only place that offset is written down: the sidecar SRT's shift is derived from it, not the other way round. Baking the offset into the cue sheet would mean two files claiming to be the timings, which is precisely the problem this pipeline exists to avoid.
 
-**Use it as the QA step for timings.** Reading a cue sheet tells you nothing about whether a slide changes in the right place. Watching thirty seconds of the draft tells you immediately. Any topic whose cue report contains a low-confidence boundary should be composed and watched before it is packaged.
+Full mode encodes to `[delivery]`'s resolution, frame rate and codec (§9), the same spec `package` used to transcode the master to; there is no separate transcode step any more, because every full compose is already a from-scratch encode to that spec. `--draft` keeps its own small, fast settings under `[compose]`, unrelated to `[delivery]`.
 
-If it later turns out the partner would accept our composite as the deliverable, this tool becomes the basis for that, but taking on post-production is a scope decision rather than a technical one, and nothing here should assume it.
+Output: `build/composed.<lang>.mp4` (`build/composed.mp4` for English) in full mode, `build/draft.<lang>.mp4` under `--draft`. Neither is written directly to `out/`; `package` copies full mode's output there.
+
+**Use `--draft` as the QA step for timings.** Reading a cue sheet tells you nothing about whether a slide changes in the right place. Watching thirty seconds of a draft tells you immediately. Any topic whose cue report contains a low-confidence boundary should be composed with `--draft` and watched before it is delivered.
 
 ### 5.5 `subtitles` (thin)
 
@@ -359,7 +385,14 @@ Converts `edit/master.srt` to WebVTT if the partner wants VTT, and normalises li
 
 Copies the delivery files into `out/` under the naming convention, strips narration from the markdown copy, writes `manifest.json` with checksums, and verifies that slide image count equals cue sheet row count equals slide count in the source.
 
-The video and subtitle files are copied through from `edit/` unmodified. If the editor's export does not match the partner's delivery specification, transcode with ffmpeg here and record both the original and transcoded checksums in the manifest. Never re-encode silently.
+The delivered video and subtitle file are `compose`'s output, not `edit/`'s: a current,
+non-draft `compose` is a prerequisite (`STEP_PREREQUISITE` if it has not run, is stale, or
+was `--draft`), and `package` only ever copies what it produced. `edit/master.mp4` and
+`edit/master.srt` are read by `compose`, never directly by `package`, and are never written
+by either. Mandarin composes and delivers its own video and subtitle file, built from the
+same presenter footage with its own slides, bumpers and subtitles; the cue sheet has no
+Mandarin equivalent (same recording, same timing) and is delivered once, by the English
+package.
 
 ### 5.7 `qa`
 
@@ -424,7 +457,7 @@ Stop and test against one real topic after step 2 and again after step 5, rather
 
 - Any SharePoint or Graph integration. Files are synced by hand.
 - Translation of any kind.
-- Video editing of any kind. The external editor delivers a finished file. `compose` assembles a draft for viewing and never produces a deliverable.
+- Video editing of any kind. The external editor delivers a finished file; `compose` composites it with slides and bumpers, but never cuts or re-times it.
 - Transcription. The editor supplies the SRT.
 - Re-timing subtitles. Their timings are authoritative.
 - Mandarin subtitle generation. The partner produces it.

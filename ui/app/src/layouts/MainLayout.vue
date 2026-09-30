@@ -7,7 +7,6 @@ const NAV = [
   { to: '/', label: 'Programme', icon: 'dashboard' },
   { to: '/diagnostics', label: 'Diagnostics', icon: 'rule' },
   { to: '/jobs', label: 'Jobs', icon: 'play_circle' },
-  { to: '/intake', label: 'Intake', icon: 'input' },
   { to: '/translation', label: 'Translation', icon: 'translate' },
   { to: '/sync', label: 'Sync', icon: 'sync' },
   { to: '/settings', label: 'Settings', icon: 'settings' },

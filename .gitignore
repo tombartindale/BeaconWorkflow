@@ -21,3 +21,5 @@ ui/app/.quasar/
 /partner-examples/*
 # Claude Code agent worktrees/scratch state
 .claude/
+# Local docker compose secrets/config; copy from .env.example
+/.env

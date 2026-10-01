@@ -1,0 +1,2 @@
+# Nightly Postgres backup to S3, 03:17 UTC (off the hour to avoid clustering with other jobs).
+17 3 * * * /usr/local/bin/backup.sh >> /proc/1/fd/1 2>> /proc/1/fd/2

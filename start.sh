@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start Beacon against the live OneDrive folder.
+# Start NUCS against the live OneDrive folder.
 #
 #   ./start.sh            check tools, show what is waiting in OneDrive, start the UI
 #   ./start.sh --pull     the same, but pull from OneDrive before starting
@@ -34,14 +34,14 @@ done
 
 # -- already running? ---------------------------------------------------------------
 if curl -fsS -o /dev/null "$URL/api/boot" 2>/dev/null; then
-  say "Beacon is already running at $URL; opening it."
+  say "NUCS is already running at $URL; opening it."
   open "$URL"
   exit 0
 fi
 
 # -- installed and pinned? ------------------------------------------------------------
 [ -x "$BCN" ] && [ -f "$HERE/ui/server/dist/cli.js" ] && [ -f "$HERE/ui/app/dist/spa/index.html" ] \
-  || fail "Beacon is not installed yet. Run: $HERE/scripts/setup.sh"
+  || fail "NUCS is not installed yet. Run: $HERE/scripts/setup.sh"
 say "Checking tools…"
 "$BCN" doctor "$HERE" --human --quiet || fail "A pinned tool is missing or the wrong version (see above). Run scripts/setup.sh."
 
@@ -93,7 +93,7 @@ else:
 fi
 
 # -- UI -------------------------------------------------------------------------------
-say "Starting Beacon at $URL  (working copy: $ROOT)"
+say "Starting NUCS at $URL  (working copy: $ROOT)"
 say "Press Ctrl-C to stop."
 ( for _ in $(seq 1 40); do
     sleep 0.5

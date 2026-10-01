@@ -43,7 +43,7 @@ export async function main(argv: string[]): Promise<number> {
     const dataDir = values['data-dir'] ? resolve(values['data-dir']) : defaultDataDir(root);
     const server = await createServer({ root, port, host: values.host, dataDir, bcn: locateBcn(values.bcn), staticDir: values['static-dir'],
       testDisableAuth: values['test-disable-auth'] });
-    process.stderr.write(`Beacon UI for ${server.app.root}\n  ${server.url}\n  data: ${dataDir}\n`);
+    process.stderr.write(`NUCS UI for ${server.app.root}\n  ${server.url}\n  data: ${dataDir}\n`);
     for (const w of server.app.warnings) process.stderr.write(`  warning: ${w}\n`);
     const stop = () => { void server.close().finally(() => process.exit(0)); };
     process.once('SIGINT', stop);

@@ -1,9 +1,9 @@
-# Beacon workflow
+# NUCS workflow
 
 Two applications, built from the specs in [spec/](spec/):
 
 - **`bcn`** ([tooling/](tooling/)): an offline Python CLI that turns approved topic markdown, an edited video and its SRT into the delivery package for the partner. Specified in [spec/tooling-spec.md](spec/tooling-spec.md).
-- **Beacon UI** ([ui/](ui/)): a local web app over `bcn`. It shows what is done, blocked and next across the whole programme, and runs `bcn` as jobs. Specified in [spec/ui-spec.md](spec/ui-spec.md).
+- **NUCS UI** ([ui/](ui/)): a local web app over `bcn`. It shows what is done, blocked and next across the whole programme, and runs `bcn` as jobs. Specified in [spec/ui-spec.md](spec/ui-spec.md).
 
 The UI contains no pipeline logic. It calls `bcn` and renders the envelopes it returns.
 
@@ -215,7 +215,7 @@ bcn sync working_area --push               # local script edits, review decision
 - **Pulled files get the current time** as their modification time, so anything built from an older version shows as stale.
 - **Downloads:** only a real pull downloads cloud-only files, and only the ones it needs. A dry run never does.
 
-## Beacon UI
+## NUCS UI
 
 `ui/server/bin/beacon-ui --root PATH [--port 8420]`. A Node backend (TypeScript, Fastify) and a Vue 3 + Quasar front end, in one npm workspace under [ui/](ui/): `shared/` holds the types (bcn's envelopes are generated from `bcn schema` with `npm run gen:envelopes`), `server/` the backend, `app/` the front end. Setup builds it; after that it runs offline.
 
@@ -225,7 +225,7 @@ bcn sync working_area --push               # local script edits, review decision
 
 **Single user, bound to 127.0.0.1, no authentication.** Requests with a foreign Host or Origin header are refused, and file access is confined to the programme root, symlinks resolved. If more than one person needs it, that is a different, hosted application: decide that deliberately.
 
-- The UI's own SQLite file (job history and preferences only) lives in `~/Library/Application Support/BeaconUI/`, never in the programme root. Deleting it loses no pipeline state.
+- The UI's own SQLite file (job history and preferences only) lives in `~/Library/Application Support/NUCS/`, never in the programme root. Deleting it loses no pipeline state.
 - Status comes from `bcn status`. It is polled, refreshed after every job, and refreshed when the tree changes (after 2 s without further change, so half-synced files are not read).
 - Jobs run `bcn` as subprocesses: up to two at once, never two on the same topic. Progress is bcn's NDJSON relayed as-is over SSE. Cancel sends SIGINT. Jobs that were running when the backend stopped are marked interrupted.
 - To run it permanently, see [scripts/com.beacon.ui.plist](scripts/com.beacon.ui.plist) (launchd).

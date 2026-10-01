@@ -28,7 +28,7 @@ async function main(): Promise<number> {
   const bcn = new Bcn(locateBcn(process.env.BCN), resolvedRoot);
   const scheduler = new Scheduler(db, bus, bcn, resolvedRoot, () => db.prefs());
 
-  process.stderr.write(`Beacon worker ${scheduler.workerId} for ${resolvedRoot}\n`);
+  process.stderr.write(`NUCS worker ${scheduler.workerId} for ${resolvedRoot}\n`);
   scheduler.start();
 
   const stop = () => {

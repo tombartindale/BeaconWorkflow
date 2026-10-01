@@ -21,7 +21,7 @@ const TARGET_RE = /^(\.|[A-Z]{2}\d{4}(\/U\d{2}(\/T\d{2})?)?)$/;
 export function defaultDataDir(root: string): string {
   let real = resolve(root);
   try { real = realpathSync(real); } catch { /* checkRoot will say what is wrong */ }
-  return join(homedir(), 'Library', 'Application Support', 'BeaconUI', sha1(real).slice(0, 12));
+  return join(homedir(), 'Library', 'Application Support', 'NUCS', sha1(real).slice(0, 12));
 }
 
 /** Fail clearly rather than present an empty dashboard that looks like nothing is done. */

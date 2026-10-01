@@ -1,7 +1,7 @@
 {
   "name": "@beacon/server",
   "private": true,
-  "description": "Beacon UI backend: enqueues jobs and streams progress (api) or runs bcn for queued jobs (worker).",
+  "description": "NUCS UI backend: enqueues jobs and streams progress (api) or runs bcn for queued jobs (worker).",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

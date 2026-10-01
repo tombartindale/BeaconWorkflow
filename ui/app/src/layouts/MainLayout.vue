@@ -31,7 +31,7 @@ const banners = computed(() => {
   <q-layout view="hHh lpR fFf">
     <q-header bordered class="bg-primary text-white">
       <q-toolbar>
-        <q-btn flat no-caps to="/" class="text-weight-bold text-subtitle1 q-mr-md" label="Beacon" />
+        <q-btn flat no-caps to="/" class="text-weight-bold text-subtitle1 q-mr-md" label="NUCS" />
         <q-tabs dense no-caps inline-label shrink stretch class="col" active-color="white" indicator-color="white">
           <q-route-tab v-for="n in NAV" :key="n.to" :to="n.to" :label="n.label" :icon="n.icon">
             <q-badge v-if="n.to === '/jobs' && beacon.activeJobs" color="orange" floating>{{ beacon.activeJobs }}</q-badge>

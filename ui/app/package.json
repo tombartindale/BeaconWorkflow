@@ -1,8 +1,8 @@
 {
   "name": "@beacon/app",
   "private": true,
-  "description": "Beacon UI front end: Vue 3 and Quasar. Builds a browser app into dist/spa, served by @beacon/server; Quasar's Electron mode can build it as a desktop app later.",
-  "productName": "Beacon",
+  "description": "NUCS UI front end: Vue 3 and Quasar. Builds a browser app into dist/spa, served by @beacon/server; Quasar's Electron mode can build it as a desktop app later.",
+  "productName": "NUCS",
   "type": "module",
   "scripts": {
     "dev": "quasar dev",

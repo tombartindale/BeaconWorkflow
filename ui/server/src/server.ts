@@ -406,7 +406,7 @@ export async function buildServer({ app, staticDir, testDisableAuth }: ServerOpt
     if (path.startsWith('/api/')) return reply.code(404).send({ error: 'Not found.' });
     if (!root || !existsSync(join(root, 'index.html'))) {
       return reply.type('text/html; charset=utf-8').send(
-        '<!doctype html><title>Beacon</title><p>The Beacon app has not been built yet. Run <code>scripts/setup.sh</code>, or <code>npm run build</code> in <code>ui/</code>.</p>');
+        '<!doctype html><title>NUCS</title><p>The NUCS app has not been built yet. Run <code>scripts/setup.sh</code>, or <code>npm run build</code> in <code>ui/</code>.</p>');
     }
     let rel = path.replace(/^\/+/, '');
     try { rel = decodeURIComponent(rel); } catch { /* use as is */ }

@@ -111,8 +111,8 @@ export class Auth {
       return;
     }
     await sgMail.send({
-      from: this.opts.emailFrom, to: email, subject: 'Sign in to Beacon',
-      text: `Sign in to Beacon: ${link}\n\nThis link expires in 15 minutes and can only be used once.`,
+      from: this.opts.emailFrom, to: email, subject: 'Sign in to NUCS',
+      text: `Sign in to NUCS: ${link}\n\nThis link expires in 15 minutes and can only be used once.`,
     });
   }
 }
